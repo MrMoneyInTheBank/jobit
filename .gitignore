@@ -31,5 +31,8 @@ go.work.sum
 # .idea/
 # .vscode/
 
+# Database files
+*.db
+
 # Misc
 todo.txt
