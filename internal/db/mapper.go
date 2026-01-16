@@ -147,9 +147,9 @@ func scanJobApplication(
 }
 
 func parseTimeString(applicationDate string) time.Time {
-	time, err := time.Parse(time.RFC3339, applicationDate)
+	res, err := time.Parse(time.RFC3339, applicationDate)
 	if err != nil {
 		panic(err)
 	}
-	return time
+	return res
 }
