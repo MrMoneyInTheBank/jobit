@@ -58,7 +58,7 @@ func bindJobApplication(application model.JobApplication) []any {
 	return []any{
 		application.CompanyName,
 		application.Position,
-		application.ApplicationDate,
+		application.ApplicationDate.UTC().Format(time.RFC3339),
 		string(application.Status),
 		application.Referral,
 		remote,
