@@ -10,7 +10,7 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
 )
 
-func TestApplySchema(t *testing.T) {
+func TestSchemaAndMappingSmoke(t *testing.T) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatal(err)
@@ -30,7 +30,7 @@ func TestApplySchema(t *testing.T) {
 		Referral:        false,
 	}
 
-	args := bindJobApplication(app)
+	boundedApp := bindJobApplication(app)
 	res, err := db.Exec(`
 		INSERT INTO job_applications (
 			company_name,
@@ -39,7 +39,7 @@ func TestApplySchema(t *testing.T) {
 			status,
 			referral
 		) VALUES (?, ?, ?, ?, ?)
-	`, args[:5]...)
+	`, boundedApp.args()[:5]...)
 	if err != nil {
 		t.Fatalf("insert: %v", err)
 	}
@@ -50,42 +50,34 @@ func TestApplySchema(t *testing.T) {
 	}
 
 	row := db.QueryRow(`
-		SELECT
-			id,
-			company_name,
-			position,
-			application_date,
-			status,
-			referral
+		SELECT *
 		FROM job_applications
 		WHERE id = ?
 	`, id)
-	var (
-		got  model.JobApplication
-		date string
-	)
+
+	var got boundJobApplication
 
 	if err := row.Scan(
-		&got.ID,
-		&got.CompanyName,
-		&got.Position,
-		&date,
-		&got.Status,
-		&got.Referral,
+		&got.id,
+		&got.companyName,
+		&got.position,
+		&got.applicationDate,
+		&got.status,
+		&got.referral,
+		&got.remote,
+		&got.location,
+		&got.payMin,
+		&got.payMax,
+		&got.payCurrency,
+		&got.ranking,
+		&got.notes,
+		&got.jobPostingLink,
+		&got.companyWebsiteLink,
 	); err != nil {
 		t.Fatalf("reading error while scan: %v", err)
 	}
 
-	_, err = time.Parse(time.RFC3339, date)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got.CompanyName != app.CompanyName {
-		t.Fatalf("Company mismatch")
-	}
-
-	if got.Referral != app.Referral {
-		t.Fatalf("Referral mismatch")
+	if !got.toModel().Compare(app) {
+		t.Fatalf("Application mismatch")
 	}
 }

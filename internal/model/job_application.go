@@ -43,3 +43,23 @@ type JobApplication struct {
 	JobPositingLink    *string
 	CompanyWebsiteLink *string
 }
+
+func (a JobApplication) Compare(b JobApplication) bool {
+	compareDate := func(t1, t2 time.Time) bool {
+		y1, m1, d1 := t1.Date()
+		y2, m2, d2 := t2.Date()
+		return y1 == y2 && m1 == m2 && d1 == d2
+	}
+	return a.CompanyName == b.CompanyName &&
+		a.Position == b.Position &&
+		compareDate(a.ApplicationDate, b.ApplicationDate) &&
+		a.Status == b.Status &&
+		a.Referral == b.Referral &&
+		a.Remote == b.Remote &&
+		a.Location == b.Location &&
+		a.Pay == b.Pay &&
+		a.Ranking == b.Ranking &&
+		a.Notes == b.Notes &&
+		a.JobPositingLink == b.JobPositingLink &&
+		a.CompanyWebsiteLink == b.CompanyWebsiteLink
+}
