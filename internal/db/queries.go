@@ -50,3 +50,8 @@ var updateQuery string = `
 			company_website_link = ?
 		WHERE id = ?
 	`
+
+var deleteByIDQuery string = `
+		DELETE FROM job_applications
+		WHERE id = ?
+	`

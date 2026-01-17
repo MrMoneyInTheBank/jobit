@@ -134,3 +134,24 @@ func PatchJobApplication(
 
 	return nil
 }
+
+func DeleteJobApplicationByID(db *sql.DB, id int64) error {
+	if id <= 0 {
+		return ErrInvalidID
+	}
+	res, err := db.Exec(deleteByIDQuery, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows != 1 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}

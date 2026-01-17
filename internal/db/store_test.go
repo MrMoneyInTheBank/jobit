@@ -135,3 +135,19 @@ func TestPatchJobApplicationByID(t *testing.T) {
 		t.Fatalf("Company name mismatch")
 	}
 }
+
+func TestDeleteJobApplicationByID(t *testing.T) {
+	db := newTestDB(t)
+	id, _ := AddJobApplication(db, testApp)
+	boundedApps, _ := GetJobApplications(db)
+	cnt := len(boundedApps)
+
+	err := DeleteJobApplicationByID(db, id)
+	if err != nil {
+		t.Fatalf("Could not delete job application: %v", err)
+	}
+	boundedApps, _ = GetJobApplications(db)
+	if len(boundedApps) != cnt-1 {
+		t.Fatalf("Number of applications mismatch post deletion.")
+	}
+}
