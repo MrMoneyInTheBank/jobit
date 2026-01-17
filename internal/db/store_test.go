@@ -1,85 +1,12 @@
 package db
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
 )
-
-func TestOpenDB(t *testing.T) {
-	db, err := OpenDB()
-	if err != nil {
-		t.Fatalf("Could not open database: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-
-	if err := db.Ping(); err != nil {
-		t.Fatalf("Could not ping database: %v", err)
-	}
-}
-
-func TestInitDB(t *testing.T) {
-	db, err := OpenDB()
-	if err != nil {
-		t.Fatalf("Could not open database: %v", err)
-	}
-
-	db, err = InitDB(db)
-	if err != nil {
-		t.Fatalf("Could not initialize database: %v", err)
-	}
-
-	application := model.JobApplication{
-		CompanyName:     "OpenAI",
-		Position:        "Machine Learning Engineer",
-		ApplicationDate: time.Now().UTC(),
-		Status:          model.StatusSubmitted,
-		Referral:        false,
-	}
-
-	boundedApp := bindJobApplication(application)
-	if _, err := db.Exec(`
-		INSERT INTO job_applications (
-			company_name,
-			position,
-			application_date,
-			status,
-			referral
-		) VALUES (?, ?, ?, ?, ?)
-	`, boundedApp.args()[:5]...); err != nil {
-		t.Fatalf("insert: %v", err)
-	}
-
-	t.Cleanup(func() { db.Close() })
-}
-
-func TestCloseDB(t *testing.T) {
-	db, err := OpenDB()
-
-	err = CloseDB(db)
-	if err != nil {
-		t.Fatalf("Could not close database: %v", err)
-	}
-}
-
-func TestAddJobApplication(t *testing.T) {
-	db, _ := OpenDB()
-	db, _ = InitDB(db)
-	t.Cleanup(func() { db.Close() })
-
-	app := model.JobApplication{
-		CompanyName:     "OpenAI",
-		Position:        "Machine Learning Engineer",
-		ApplicationDate: time.Now().UTC(),
-		Status:          model.StatusSubmitted,
-		Referral:        false,
-	}
-
-	if _, err := AddJobApplication(db, app); err != nil {
-		t.Fatalf("Could not add job application: %v", err)
-	}
-}
 
 var testApp model.JobApplication = model.JobApplication{
 	CompanyName:     "OpenAI",
@@ -89,10 +16,66 @@ var testApp model.JobApplication = model.JobApplication{
 	Referral:        false,
 }
 
-func TestGetJobApplications(t *testing.T) {
-	db, _ := OpenDB()
+func mustOpenDB(t *testing.T) *sql.DB {
+	t.Helper()
+	db, err := OpenDB()
+	if err != nil {
+		t.Fatalf("Could not open database: %v", err)
+	}
 	t.Cleanup(func() { db.Close() })
-	db, _ = InitDB(db)
+	return db
+}
+
+func mustInitDB(t *testing.T, db *sql.DB) *sql.DB {
+	t.Helper()
+	db, err := InitDB(db)
+	if err != nil {
+		t.Fatalf("Could not initialize database: %v", err)
+	}
+	return db
+}
+
+func newTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+	return mustInitDB(t, mustOpenDB(t))
+}
+
+func TestOpenDB(t *testing.T) {
+	db := mustOpenDB(t)
+	if err := db.Ping(); err != nil {
+		t.Fatalf("Could not ping database: %v", err)
+	}
+}
+
+func TestInitDB(t *testing.T) {
+	db := newTestDB(t)
+	boundedApp := bindJobApplication(testApp)
+
+	if _, err := db.Exec(insertQuery, boundedApp.args()...); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+}
+
+func TestCloseDB(t *testing.T) {
+	db, err := OpenDB()
+	t.Cleanup(func() { db.Close() })
+
+	err = CloseDB(db)
+	if err != nil {
+		t.Fatalf("Could not close database: %v", err)
+	}
+}
+
+func TestAddJobApplication(t *testing.T) {
+	db := newTestDB(t)
+
+	if _, err := AddJobApplication(db, testApp); err != nil {
+		t.Fatalf("Could not add job application: %v", err)
+	}
+}
+
+func TestGetJobApplications(t *testing.T) {
+	db := newTestDB(t)
 
 	id1, _ := AddJobApplication(db, testApp)
 	id2, _ := AddJobApplication(db, testApp)
@@ -112,9 +95,7 @@ func TestGetJobApplications(t *testing.T) {
 }
 
 func TestGetJobApplicationByID(t *testing.T) {
-	db, _ := OpenDB()
-	t.Cleanup(func() { db.Close() })
-	db, _ = InitDB(db)
+	db := newTestDB(t)
 
 	id, _ := AddJobApplication(db, testApp)
 	got, err := GetJobApplicationByID(db, id)
