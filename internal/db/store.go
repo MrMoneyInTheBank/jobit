@@ -50,6 +50,64 @@ func AddJobApplication(db *sql.DB, app model.JobApplication) (int64, error) {
 	return id, nil
 }
 
+func GetJobApplications(db *sql.DB) ([]boundJobApplication, error) {
+	rows, err := db.Query(getAllQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var got []boundJobApplication
+	for rows.Next() {
+		var app boundJobApplication
+		err := rows.Scan(
+			&app.id,
+			&app.companyName,
+			&app.position,
+			&app.applicationDate,
+			&app.status,
+			&app.referral,
+			&app.remote,
+			&app.location,
+			&app.payMin,
+			&app.payMax,
+			&app.payCurrency,
+			&app.ranking,
+			&app.notes,
+			&app.jobPostingLink,
+			&app.companyWebsiteLink,
+		)
+		if err != nil {
+			return nil, err
+		}
+		got = append(got, app)
+	}
+
+	return got, nil
+}
+
 func GetJobApplicationByID(db *sql.DB, id int64) (*boundJobApplication, error) {
-	return nil, error(sql.ErrNoRows)
+	var got boundJobApplication
+
+	err := db.QueryRow(getByIDQuery, id).Scan(
+		&got.id,
+		&got.companyName,
+		&got.position,
+		&got.applicationDate,
+		&got.status,
+		&got.referral,
+		&got.remote,
+		&got.location,
+		&got.payMin,
+		&got.payMax,
+		&got.payCurrency,
+		&got.ranking,
+		&got.notes,
+		&got.jobPostingLink,
+		&got.companyWebsiteLink,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &got, nil
 }

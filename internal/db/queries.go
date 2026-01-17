@@ -18,3 +18,15 @@ var insertQuery string = `
 			company_website_link
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
+
+var getAllQuery string = `
+		SELECT *
+		FROM job_applications
+	`
+
+var getByIDQuery string = `
+		SELECT *
+		FROM job_applications
+		WHERE id = ?
+		LIMIT 1
+	`
