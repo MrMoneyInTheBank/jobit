@@ -37,24 +37,7 @@ func CloseDB(db *sql.DB) error {
 
 func AddJobApplication(db *sql.DB, app model.JobApplication) (int64, error) {
 	boundedApp := bindJobApplication(app)
-	res, err := db.Exec(`
-		INSERT INTO job_applications (
-			company_name,
-			position,
-			application_date,
-			status,
-			referral,
-			remote,
-			location,
-			pay_min,
-			pay_max,
-			pay_currency,
-			ranking,
-			notes,
-			job_positing_link,
-			company_website_link
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, boundedApp.args()...)
+	res, err := db.Exec(insertQuery, boundedApp.args()...)
 	if err != nil {
 		return -1, err
 	}
@@ -65,4 +48,8 @@ func AddJobApplication(db *sql.DB, app model.JobApplication) (int64, error) {
 	}
 
 	return id, nil
+}
+
+func GetJobApplicationByID(db *sql.DB, id int64) (*boundJobApplication, error) {
+	return nil, error(sql.ErrNoRows)
 }
