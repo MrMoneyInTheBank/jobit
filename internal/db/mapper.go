@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
@@ -62,8 +63,8 @@ func bindJobApplication(application model.JobApplication) boundJobApplication {
 	if application.Notes != nil {
 		boundedApp.notes = sql.NullString{String: *application.Notes, Valid: true}
 	}
-	if application.JobPositingLink != nil {
-		boundedApp.jobPostingLink = sql.NullString{String: *application.JobPositingLink, Valid: true}
+	if application.JobPostingLink != nil {
+		boundedApp.jobPostingLink = sql.NullString{String: *application.JobPostingLink, Valid: true}
 	}
 	if application.CompanyWebsiteLink != nil {
 		boundedApp.companyWebsiteLink = sql.NullString{String: *application.CompanyWebsiteLink, Valid: true}
@@ -72,7 +73,7 @@ func bindJobApplication(application model.JobApplication) boundJobApplication {
 	return boundedApp
 }
 
-func (b boundJobApplication) args() []any {
+func (b boundJobApplication) insertArgs() []any {
 	return []any{
 		b.companyName,
 		b.position,
@@ -88,6 +89,37 @@ func (b boundJobApplication) args() []any {
 		b.notes,
 		b.jobPostingLink,
 		b.companyWebsiteLink,
+	}
+}
+
+var ErrInvalidID = errors.New("Invalid ID")
+
+func bindJobApplicationPatch(app model.JobApplication) (boundJobApplication, error) {
+	if app.ID <= 0 {
+		return boundJobApplication{}, ErrInvalidID
+	}
+	boundedApp := bindJobApplication(app)
+	boundedApp.id = app.ID
+	return boundedApp, nil
+}
+
+func (b boundJobApplication) updateArgs() []any {
+	return []any{
+		b.companyName,
+		b.position,
+		b.applicationDate,
+		b.status,
+		b.referral,
+		b.remote,
+		b.location,
+		b.payMin,
+		b.payMax,
+		b.payCurrency,
+		b.ranking,
+		b.notes,
+		b.jobPostingLink,
+		b.companyWebsiteLink,
+		b.id,
 	}
 }
 
@@ -138,7 +170,7 @@ func (b boundJobApplication) toModel() model.JobApplication {
 	}
 
 	if b.jobPostingLink.Valid {
-		app.JobPositingLink = &b.jobPostingLink.String
+		app.JobPostingLink = &b.jobPostingLink.String
 	}
 
 	if b.companyWebsiteLink.Valid {

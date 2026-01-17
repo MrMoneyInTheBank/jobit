@@ -40,7 +40,7 @@ type JobApplication struct {
 	Pay                *Pay
 	Ranking            *int
 	Notes              *string
-	JobPositingLink    *string
+	JobPostingLink     *string
 	CompanyWebsiteLink *string
 }
 
@@ -60,6 +60,61 @@ func (a JobApplication) Compare(b JobApplication) bool {
 		a.Pay == b.Pay &&
 		a.Ranking == b.Ranking &&
 		a.Notes == b.Notes &&
-		a.JobPositingLink == b.JobPositingLink &&
+		a.JobPostingLink == b.JobPostingLink &&
 		a.CompanyWebsiteLink == b.CompanyWebsiteLink
+}
+
+type JobApplicationPatch struct {
+	CompanyName     *string
+	Position        *string
+	ApplicationDate *time.Time
+	Status          *Status
+	Referral        *bool
+	Remote          *RemoteType
+
+	Location           *string
+	Pay                *Pay
+	Ranking            *int
+	Notes              *string
+	JobPostingLink     *string
+	CompanyWebsiteLink *string
+}
+
+func (a *JobApplication) Apply(p JobApplicationPatch) {
+	if p.CompanyName != nil {
+		a.CompanyName = *p.CompanyName
+	}
+	if p.Position != nil {
+		a.Position = *p.Position
+	}
+	if p.ApplicationDate != nil {
+		a.ApplicationDate = *p.ApplicationDate
+	}
+	if p.Status != nil {
+		a.Status = *p.Status
+	}
+	if p.Referral != nil {
+		a.Referral = *p.Referral
+	}
+	if p.Remote != nil {
+		a.Remote = p.Remote
+	}
+	if p.Location != nil {
+		a.Location = p.Location
+	}
+	if p.Pay != nil {
+		a.Pay = p.Pay
+	}
+	if p.Ranking != nil {
+		a.Ranking = p.Ranking
+	}
+	if p.Notes != nil {
+		a.Notes = p.Notes
+	}
+	if p.JobPostingLink != nil {
+		a.JobPostingLink = p.JobPostingLink
+	}
+	if p.CompanyWebsiteLink != nil {
+		a.CompanyWebsiteLink = p.CompanyWebsiteLink
+	}
 }

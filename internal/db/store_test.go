@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ func TestInitDB(t *testing.T) {
 	db := newTestDB(t)
 	boundedApp := bindJobApplication(testApp)
 
-	if _, err := db.Exec(insertQuery, boundedApp.args()...); err != nil {
+	if _, err := db.Exec(insertQuery, boundedApp.insertArgs()...); err != nil {
 		t.Fatalf("insert: %v", err)
 	}
 }
@@ -104,5 +105,33 @@ func TestGetJobApplicationByID(t *testing.T) {
 	}
 	if got.id != id {
 		t.Fatalf("ID mismatch")
+	}
+}
+
+func ptr[T any](t T) *T {
+	return &t
+}
+
+func TestPatchJobApplicationByID(t *testing.T) {
+	db := newTestDB(t)
+
+	id, _ := AddJobApplication(db, testApp)
+	got, _ := GetJobApplicationByID(db, id)
+	app := got.toModel()
+
+	patch := model.JobApplicationPatch{
+		CompanyName: ptr("Anthropic"),
+	}
+
+	err := PatchJobApplication(db, app, patch)
+	if err != nil {
+		t.Fatalf("Could not patch job application: %v", err)
+	}
+	got, _ = GetJobApplicationByID(db, id)
+	app = got.toModel()
+	if app.CompanyName != *patch.CompanyName {
+		fmt.Printf("app.CompanyName: %s\n", app.CompanyName)
+		fmt.Printf("patch.CompanyName: %s\n", *patch.CompanyName)
+		t.Fatalf("Company name mismatch")
 	}
 }

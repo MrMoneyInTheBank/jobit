@@ -39,7 +39,7 @@ func TestSchemaAndMappingSmoke(t *testing.T) {
 			status,
 			referral
 		) VALUES (?, ?, ?, ?, ?)
-	`, boundedApp.args()[:5]...)
+	`, boundedApp.insertArgs()[:5]...)
 	if err != nil {
 		t.Fatalf("insert: %v", err)
 	}

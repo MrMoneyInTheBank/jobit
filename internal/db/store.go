@@ -37,7 +37,7 @@ func CloseDB(db *sql.DB) error {
 
 func AddJobApplication(db *sql.DB, app model.JobApplication) (int64, error) {
 	boundedApp := bindJobApplication(app)
-	res, err := db.Exec(insertQuery, boundedApp.args()...)
+	res, err := db.Exec(insertQuery, boundedApp.insertArgs()...)
 	if err != nil {
 		return -1, err
 	}
@@ -110,4 +110,27 @@ func GetJobApplicationByID(db *sql.DB, id int64) (*boundJobApplication, error) {
 	}
 
 	return &got, nil
+}
+
+func PatchJobApplication(
+	db *sql.DB,
+	app model.JobApplication,
+	patch model.JobApplicationPatch,
+) error {
+	app.Apply(patch)
+	boundedApp, err := bindJobApplicationPatch(app)
+	if err != nil {
+		return err
+	}
+
+	res, err := db.Exec(updateQuery, boundedApp.updateArgs()...)
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected, _ := res.RowsAffected(); rowsAffected != 1 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
