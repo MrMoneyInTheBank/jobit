@@ -1,6 +1,6 @@
 package db
 
-var insertQuery string = `
+const insertQuery string = `
 		INSERT INTO job_applications (
 			company_name,
 			position,
@@ -19,19 +19,19 @@ var insertQuery string = `
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-var getAllQuery string = `
+const getAllQuery string = `
 		SELECT *
 		FROM job_applications
 	`
 
-var getByIDQuery string = `
+const getByIDQuery string = `
 		SELECT *
 		FROM job_applications
 		WHERE id = ?
 		LIMIT 1
 	`
 
-var updateQuery string = `
+const updateQuery string = `
 	UPDATE job_applications
 		SET
 			company_name = ?,
@@ -51,7 +51,7 @@ var updateQuery string = `
 		WHERE id = ?
 	`
 
-var deleteByIDQuery string = `
+const deleteByIDQuery string = `
 		DELETE FROM job_applications
 		WHERE id = ?
 	`
