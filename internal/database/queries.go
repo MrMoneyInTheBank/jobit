@@ -1,4 +1,4 @@
-package db
+package database
 
 const insertQuery string = `
 		INSERT INTO job_applications (
