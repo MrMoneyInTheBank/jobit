@@ -108,9 +108,9 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 	return app
 }
 
-func SeedDB(db *sql.DB) error {
+func SeedDB(db *sql.DB, count int) error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for range 100 {
+	for range count {
 		app := randomJobApplication(r)
 		if _, err := AddJobApplication(db, app); err != nil {
 			return err
