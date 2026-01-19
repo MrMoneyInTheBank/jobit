@@ -85,7 +85,7 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 
 	// Optional: Ranking (1–10)
 	if r.Float64() < 0.5 {
-		rank := 1 + r.Intn(10)
+		rank := 1 + r.Intn(5)
 		app.Ranking = &rank
 	}
 
@@ -108,7 +108,7 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 	return app
 }
 
-func seedDB(db *sql.DB) error {
+func SeedDB(db *sql.DB) error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for range 100 {
 		app := randomJobApplication(r)
