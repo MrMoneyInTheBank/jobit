@@ -19,7 +19,7 @@ var testApp model.JobApplication = model.JobApplication{
 
 func mustOpenDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := OpenDB()
+	db, err := OpenDB(nil)
 	if err != nil {
 		t.Fatalf("Could not open database: %v", err)
 	}
@@ -27,18 +27,19 @@ func mustOpenDB(t *testing.T) *sql.DB {
 	return db
 }
 
-func mustInitDB(t *testing.T, db *sql.DB) *sql.DB {
+func mustInitDB(t *testing.T, db *sql.DB) {
 	t.Helper()
-	db, err := InitDB(db)
+	err := InitDB(db)
 	if err != nil {
 		t.Fatalf("Could not initialize database: %v", err)
 	}
-	return db
 }
 
 func newTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	return mustInitDB(t, mustOpenDB(t))
+	db := mustOpenDB(t)
+	mustInitDB(t, db)
+	return db
 }
 
 func TestOpenDB(t *testing.T) {
@@ -58,7 +59,7 @@ func TestInitDB(t *testing.T) {
 }
 
 func TestCloseDB(t *testing.T) {
-	db, err := OpenDB()
+	db, err := OpenDB(nil)
 	t.Cleanup(func() { db.Close() })
 
 	err = CloseDB(db)
@@ -78,8 +79,12 @@ func TestAddJobApplication(t *testing.T) {
 func TestGetJobApplications(t *testing.T) {
 	db := newTestDB(t)
 
-	id1, _ := AddJobApplication(db, testApp)
-	id2, _ := AddJobApplication(db, testApp)
+	id1, err1 := AddJobApplication(db, testApp)
+	id2, err2 := AddJobApplication(db, testApp)
+	if err1 != nil || err2 != nil {
+		t.Logf("Could not add job application 1: %v", err1)
+		t.Fatalf("Could not add job application 2: %v", err2)
+	}
 
 	got, err := GetJobApplications(db)
 	if err != nil {
@@ -90,7 +95,7 @@ func TestGetJobApplications(t *testing.T) {
 		t.Fatalf("Number of applications mismatch")
 	}
 
-	if got[0].id != id1 || got[1].id != id2 {
+	if got[0].ID != id1 || got[1].ID != id2 {
 		t.Fatalf("ID mismatch")
 	}
 }
@@ -98,12 +103,15 @@ func TestGetJobApplications(t *testing.T) {
 func TestGetJobApplicationByID(t *testing.T) {
 	db := newTestDB(t)
 
-	id, _ := AddJobApplication(db, testApp)
+	id, err := AddJobApplication(db, testApp)
+	if err != nil {
+		t.Fatalf("Could not add job application: %v", err)
+	}
 	got, err := GetJobApplicationByID(db, id)
 	if err != nil {
 		t.Fatalf("Could not get job application: %v", err)
 	}
-	if got.id != id {
+	if got.ID != id {
 		t.Fatalf("ID mismatch")
 	}
 }
@@ -115,20 +123,29 @@ func ptr[T any](t T) *T {
 func TestPatchJobApplicationByID(t *testing.T) {
 	db := newTestDB(t)
 
-	id, _ := AddJobApplication(db, testApp)
-	got, _ := GetJobApplicationByID(db, id)
-	app := got.toModel()
-
+	id, err := AddJobApplication(db, testApp)
+	if err != nil {
+		t.Fatalf("Could not add job application: %v", err)
+	}
+	app, err := GetJobApplicationByID(db, id)
+	if err != nil {
+		t.Fatalf("Could not get job application: %v", err)
+	}
+	if app == nil {
+		t.Fatalf("Job application is nil")
+	}
 	patch := model.JobApplicationPatch{
 		CompanyName: ptr("Anthropic"),
 	}
 
-	err := PatchJobApplication(db, app, patch)
+	err = PatchJobApplication(db, *app, patch)
 	if err != nil {
 		t.Fatalf("Could not patch job application: %v", err)
 	}
-	got, _ = GetJobApplicationByID(db, id)
-	app = got.toModel()
+	app, err = GetJobApplicationByID(db, id)
+	if err != nil {
+		t.Fatalf("Could not get job application: %v", err)
+	}
 	if app.CompanyName != *patch.CompanyName {
 		fmt.Printf("app.CompanyName: %s\n", app.CompanyName)
 		fmt.Printf("patch.CompanyName: %s\n", *patch.CompanyName)
@@ -138,11 +155,17 @@ func TestPatchJobApplicationByID(t *testing.T) {
 
 func TestDeleteJobApplicationByID(t *testing.T) {
 	db := newTestDB(t)
-	id, _ := AddJobApplication(db, testApp)
-	boundedApps, _ := GetJobApplications(db)
+	id, err := AddJobApplication(db, testApp)
+	if err != nil {
+		t.Fatalf("Could not add job application: %v", err)
+	}
+	boundedApps, err := GetJobApplications(db)
+	if err != nil {
+		t.Fatalf("Could not get job applications: %v", err)
+	}
 	cnt := len(boundedApps)
 
-	err := DeleteJobApplicationByID(db, id)
+	err = DeleteJobApplicationByID(db, id)
 	if err != nil {
 		t.Fatalf("Could not delete job application: %v", err)
 	}

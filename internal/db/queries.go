@@ -20,12 +20,42 @@ const insertQuery string = `
 	`
 
 const getAllQuery string = `
-		SELECT *
+		SELECT
+			id,
+			company_name,
+			position,
+			application_date,
+			status,
+			referral,
+			remote,
+			location,
+			pay_min,
+			pay_max,
+			pay_currency,
+			ranking,
+			notes,
+			job_positing_link,
+			company_website_link
 		FROM job_applications
 	`
 
 const getByIDQuery string = `
-		SELECT *
+		SELECT 
+				id,
+			company_name,
+			position,
+			application_date,
+			status,
+			referral,
+			remote,
+			location,
+			pay_min,
+			pay_max,
+			pay_currency,
+			ranking,
+			notes,
+			job_positing_link,
+			company_website_link
 		FROM job_applications
 		WHERE id = ?
 		LIMIT 1

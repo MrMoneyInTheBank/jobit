@@ -6,8 +6,15 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
 )
 
-func OpenDB() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", ":memory:")
+func OpenDB(dsn *string) (*sql.DB, error) {
+	var connStr string
+	if dsn != nil {
+		connStr = *dsn
+	} else {
+		connStr = ":memory:"
+	}
+
+	db, err := sql.Open("sqlite3", connStr)
 	if err != nil {
 		return nil, err
 	}
@@ -15,16 +22,15 @@ func OpenDB() (*sql.DB, error) {
 	return db, nil
 }
 
-func InitDB(db *sql.DB) (*sql.DB, error) {
+func InitDB(db *sql.DB) error {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
 	if _, err := db.Exec(schemaSQL); err != nil {
-		db.Close()
-		return nil, err
+		return err
 	}
 
-	return db, nil
+	return nil
 }
 
 func CloseDB(db *sql.DB) error {
@@ -50,13 +56,13 @@ func AddJobApplication(db *sql.DB, app model.JobApplication) (int64, error) {
 	return id, nil
 }
 
-func GetJobApplications(db *sql.DB) ([]boundJobApplication, error) {
+func GetJobApplications(db *sql.DB) ([]model.JobApplication, error) {
 	rows, err := db.Query(getAllQuery)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var got []boundJobApplication
+	var got []model.JobApplication
 	for rows.Next() {
 		var app boundJobApplication
 		err := rows.Scan(
@@ -79,13 +85,18 @@ func GetJobApplications(db *sql.DB) ([]boundJobApplication, error) {
 		if err != nil {
 			return nil, err
 		}
-		got = append(got, app)
+		got = append(got, app.toModel())
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return got, nil
 }
 
-func GetJobApplicationByID(db *sql.DB, id int64) (*boundJobApplication, error) {
+func GetJobApplicationByID(db *sql.DB, id int64) (*model.JobApplication, error) {
+	if id <= 0 {
+		return nil, ErrInvalidID
+	}
 	var got boundJobApplication
 
 	err := db.QueryRow(getByIDQuery, id).Scan(
@@ -109,7 +120,9 @@ func GetJobApplicationByID(db *sql.DB, id int64) (*boundJobApplication, error) {
 		return nil, err
 	}
 
-	return &got, nil
+	res := got.toModel()
+
+	return &res, nil
 }
 
 func PatchJobApplication(
@@ -117,6 +130,9 @@ func PatchJobApplication(
 	app model.JobApplication,
 	patch model.JobApplicationPatch,
 ) error {
+	if app.ID <= 0 {
+		return ErrInvalidID
+	}
 	app.Apply(patch)
 	boundedApp, err := bindJobApplicationPatch(app)
 	if err != nil {
