@@ -1,0 +1,13 @@
+version: "3"
+
+tasks:
+  run:
+    desc: Run jobit
+    cmds:
+      - clear
+      - go run ./cmd/jobit
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
