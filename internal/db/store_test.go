@@ -61,6 +61,9 @@ func TestInitDB(t *testing.T) {
 func TestCloseDB(t *testing.T) {
 	db, err := OpenDB(nil)
 	t.Cleanup(func() { db.Close() })
+	if err != nil {
+		t.Fatalf("Could not open database: %v", err)
+	}
 
 	err = CloseDB(db)
 	if err != nil {
