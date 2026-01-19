@@ -36,3 +36,6 @@ go.work.sum
 
 # Misc
 todo.md
+
+# Task runner
+.task/*
