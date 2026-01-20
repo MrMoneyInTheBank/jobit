@@ -1,12 +1,16 @@
 version: "3"
 
 tasks:
-  run:
-    desc: Run jobit
+  run-dev:
+    desc: Run jobit in dev mode
     cmds:
       - clear
-      - go run ./cmd/jobit
-
+      - JOBIT_DB_DSN=":memory:" go run ./cmd/jobit
+  run-prod:
+    desc: Run jobit in prod mode
+    cmds:
+      - clear
+      - JOBIT_DB_DSN="./jobit.db" go run ./cmd/jobit
   seed:
     desc: Seed database
     cmds:
