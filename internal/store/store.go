@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -9,14 +10,17 @@ import (
 )
 
 func OpenDB(dsn *string) (*sql.DB, error) {
-	var connStr string
-	if dsn != nil {
-		connStr = *dsn
-	} else {
-		connStr = ":memory:"
+	finalDSN := ":memory:"
+
+	if env := os.Getenv("JOBIT_DB_DSN"); env != "" {
+		finalDSN = env
 	}
 
-	db, err := sql.Open("sqlite3", connStr)
+	if dsn != nil && *dsn != "" {
+		finalDSN = *dsn
+	}
+
+	db, err := sql.Open("sqlite3", finalDSN)
 	if err != nil {
 		return nil, err
 	}
