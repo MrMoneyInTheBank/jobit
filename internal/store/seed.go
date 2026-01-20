@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"math/rand"
 	"time"
@@ -58,19 +59,16 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 		Referral:        r.Float64() < 0.3, // 30% referral
 	}
 
-	// Optional: Remote
 	if r.Float64() < 0.8 {
 		rt := remoteTypes[r.Intn(len(remoteTypes))]
 		app.Remote = &rt
 	}
 
-	// Optional: Location
 	if r.Float64() < 0.7 {
 		loc := locations[r.Intn(len(locations))]
 		app.Location = &loc
 	}
 
-	// Optional: Pay
 	if r.Float64() < 0.6 {
 		min := 80_000 + r.Intn(70_000)
 		max := min + r.Intn(50_000)
@@ -83,19 +81,16 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 		}
 	}
 
-	// Optional: Ranking (1–10)
 	if r.Float64() < 0.5 {
 		rank := 1 + r.Intn(5)
 		app.Ranking = &rank
 	}
 
-	// Optional: Notes
 	if r.Float64() < 0.4 {
 		note := "Reached out to recruiter on LinkedIn"
 		app.Notes = &note
 	}
 
-	// Optional: Links
 	if r.Float64() < 0.5 {
 		jp := "https://jobs.example.com/posting"
 		app.JobPostingLink = &jp
@@ -109,12 +104,26 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 }
 
 func SeedDB(db *sql.DB, count int) error {
+	ctx := context.Background()
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for range count {
 		app := randomJobApplication(r)
-		if _, err := AddJobApplication(db, app); err != nil {
-			return err
+		boundedApp := bindJobApplication(app)
+		if _, err2 := tx.ExecContext(ctx, insertQuery, boundedApp.insertArgs()...); err != nil {
+			return err2
 		}
 	}
+	err = tx.Commit()
 	return nil
 }
