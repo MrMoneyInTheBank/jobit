@@ -7,7 +7,13 @@ tasks:
       - clear
       - go run ./cmd/jobit
 
+  seed:
+    desc: Seed database
+    cmds:
+      - clear
+      - go run ./cmd/seed
   test:
     desc: Run tests
     cmds:
       - go test ./...
+
