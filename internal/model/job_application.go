@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 type Status string
 
@@ -24,6 +28,33 @@ type Pay struct {
 	Min      *int
 	Max      *int
 	Currency *string
+}
+
+func (p Pay) String() string {
+	if p.Min == nil && p.Max == nil && p.Currency == nil {
+		return "Unknown"
+	}
+
+	var b strings.Builder
+
+	if p.Currency != nil {
+		b.WriteString(*p.Currency)
+		b.WriteByte(' ')
+	}
+
+	switch {
+	case p.Min != nil && p.Max != nil:
+		fmt.Fprintf(&b, "%d - %d", *p.Min, *p.Max)
+	case p.Min != nil:
+		fmt.Fprintf(&b, "%d+", *p.Min)
+	case p.Max != nil:
+		fmt.Fprintf(&b, "<= %d", *p.Max)
+	default:
+		// currency only
+		b.WriteString("Unknown")
+	}
+
+	return strings.TrimSpace(b.String())
 }
 
 type JobApplication struct {
