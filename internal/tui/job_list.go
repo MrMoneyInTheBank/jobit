@@ -81,3 +81,23 @@ func InitJobList(jobs []model.JobApplication) JobList {
 
 	return JobList{JobsTable: t}
 }
+
+func computeMinColWidths(columns []table.Column, rows []table.Row) []int {
+	widths := make([]int, len(columns))
+
+	for idx, column := range columns {
+		widths[idx] = lipgloss.Width(column.Title)
+	}
+	log.Printf("before rows\nColumn widths: %v\n", widths)
+
+	for _, row := range rows {
+		for idx, cell := range row {
+			if len(cell) > widths[idx] {
+				widths[idx] = lipgloss.Width(cell)
+			}
+		}
+	}
+
+	log.Printf("after rows\nColumn widths: %v\n", widths)
+	return widths
+}
