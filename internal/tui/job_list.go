@@ -73,13 +73,17 @@ func InitJobList(jobs []model.JobApplication) JobList {
 			}(),
 		}
 	}
+	minimumColumnWidths := computeMinColWidths(columns, rows)
+	for idx := range columns {
+		columns[idx].Width = minimumColumnWidths[idx]
+	}
 
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 	)
 
-	return JobList{JobsTable: t}
+	return JobList{JobsTable: t, minimumColumnWidths: minimumColumnWidths}
 }
 
 func computeMinColWidths(columns []table.Column, rows []table.Row) []int {
