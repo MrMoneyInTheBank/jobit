@@ -26,6 +26,7 @@ func (jl *JobList) Init() tea.Cmd {
 }
 
 func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -33,7 +34,8 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return jl, tea.Quit
 		}
 	}
-	return jl, nil
+	jl.JobsTable, cmd = jl.JobsTable.Update(msg)
+	return jl, cmd
 }
 
 func (jl *JobList) View() string {
