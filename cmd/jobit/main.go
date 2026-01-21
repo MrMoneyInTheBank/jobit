@@ -27,7 +27,7 @@ func main() {
 	}
 
 	job_list := tui.InitJobList(job_apps)
-	if _, err := tea.NewProgram(&job_list).Run(); err != nil {
+	if _, err := tea.NewProgram(&job_list, tea.WithAltScreen()).Run(); err != nil {
 		log.Fatalf("Could not run TUI: %v", err)
 	}
 }
