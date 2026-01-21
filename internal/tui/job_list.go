@@ -54,7 +54,7 @@ func InitJobList(jobs []model.JobApplication) JobList {
 		{Title: "ID"},
 		{Title: "Company Name"},
 		{Title: "Position"},
-		{Title: "Application Date"},
+		{Title: "Date Applied"},
 		{Title: "Status"},
 		{Title: "Referral"},
 		{Title: "Pay"},
