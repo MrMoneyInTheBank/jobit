@@ -33,6 +33,12 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return jl, tea.Quit
+		case "esc":
+			if jl.JobsTable.Focused() {
+				jl.JobsTable.Blur()
+			} else {
+				jl.JobsTable.Focus()
+			}
 		}
 	}
 	jl.JobsTable, cmd = jl.JobsTable.Update(msg)
