@@ -12,9 +12,10 @@ import (
 )
 
 type JobList struct {
-	JobsTable table.Model
-	width     int
-	height    int
+	JobsTable           table.Model
+	width               int
+	height              int
+	minimumColumnWidths []int
 }
 
 var baseStyle = lipgloss.NewStyle().
