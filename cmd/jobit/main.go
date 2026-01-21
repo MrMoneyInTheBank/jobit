@@ -14,6 +14,12 @@ func ptr[T any](v T) *T {
 }
 
 func main() {
+	f, err := tea.LogToFile("jobit.log", "debug")
+	if err != nil {
+		log.Fatalf("Could not open log file: %v", err)
+	}
+	defer f.Close()
+
 	db, err := store.OpenDB(ptr("seed.db"))
 	if err != nil {
 		log.Fatalf("Could not open database: %v", err)
