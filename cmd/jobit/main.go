@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	db, err := store.OpenDB(nil)
+	db, err := store.OpenDB(ptr("seed.db"))
 	if err != nil {
 		log.Fatalf("Could not open database: %v", err)
 	}
