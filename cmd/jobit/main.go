@@ -3,7 +3,10 @@ package main
 import (
 	"log"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	store "github.com/MrMoneyInTheBank/jobit/internal/store"
+	"github.com/MrMoneyInTheBank/jobit/internal/tui"
 )
 
 func ptr[T any](v T) *T {
@@ -23,5 +26,8 @@ func main() {
 		log.Fatalf("Could not get job applications: %v", err)
 	}
 
+	job_list := tui.InitJobList(job_apps)
+	if _, err := tea.NewProgram(&job_list).Run(); err != nil {
+		log.Fatalf("Could not run TUI: %v", err)
 	}
 }
