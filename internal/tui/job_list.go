@@ -46,9 +46,10 @@ func (jl *JobList) View() string {
 
 func InitJobList(jobs []model.JobApplication) JobList {
 	columns := []table.Column{
-		{Title: "ID", Width: 5},
-		{Title: "Company Name", Width: 20},
-		{Title: "Position", Width: 20},
+		{Title: "ID"},
+		{Title: "Company Name"},
+		{Title: "Position"},
+		{Title: "Application Date"},
 	}
 	rows := make([]table.Row, len(jobs))
 
@@ -57,6 +58,7 @@ func InitJobList(jobs []model.JobApplication) JobList {
 			strconv.Itoa(int(job.ID)),
 			job.CompanyName,
 			job.Position,
+			job.ApplicationDate.Format("2006-01-02"),
 		}
 	}
 
