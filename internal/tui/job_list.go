@@ -22,7 +22,7 @@ var baseStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("240"))
 
 func (jl *JobList) Init() tea.Cmd {
-	return tea.SetWindowTitle("this is the title just please show up")
+	return tea.SetWindowTitle("\U0001F4BC Jobit")
 }
 
 func (jl *JobList) resizeColumns() {
