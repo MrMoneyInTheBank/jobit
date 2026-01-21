@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/table"
@@ -21,43 +22,15 @@ var baseStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("240"))
 
 func (jl *JobList) Init() tea.Cmd {
-	return tea.SetWindowTitle("Jobit")
-}
-
-// recalculates column widths to fill the available terminal width
-func (jl *JobList) resizeColumns() {
-	// How much width does your border consume?
-	// NormalBorder adds 1 char on left + 1 char on right => 2 total.
-	// If you later add padding/margins, subtract those too.
-	available := jl.width - 2
-	if available < 20 {
-		available = 20
-	}
-
-	idW := 5
-	remaining := available - idW
-	if remaining < 10 {
-		remaining = 10
-	}
-
-	companyW := remaining / 2
-	positionW := remaining - companyW
-
-	jl.JobsTable.SetColumns([]table.Column{
-		{Title: "ID", Width: idW},
-		{Title: "Company Name", Width: companyW},
-		{Title: "Position", Width: positionW},
-	})
+	return tea.SetWindowTitle("this is the title just please show up")
 }
 
 func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
-		jl.width = msg.Width
-		jl.height = msg.Height
-		jl.resizeColumns()
-		return jl, tea.ClearScreen
+		log.Printf("Window size changed to %d x %d\n", msg.Width, msg.Height)
+		return jl, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -65,11 +38,7 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return jl, tea.Quit
 		}
 	}
-
-	// (Optional but common) forward messages to the table so it can handle arrows, etc.
-	var cmd tea.Cmd
-	jl.JobsTable, cmd = jl.JobsTable.Update(msg)
-	return jl, cmd
+	return jl, nil
 }
 
 func (jl *JobList) View() string {
@@ -77,7 +46,6 @@ func (jl *JobList) View() string {
 }
 
 func InitJobList(jobs []model.JobApplication) JobList {
-	// Start with whatever; it'll get resized as soon as WindowSizeMsg arrives.
 	columns := []table.Column{
 		{Title: "ID", Width: 5},
 		{Title: "Company Name", Width: 20},
