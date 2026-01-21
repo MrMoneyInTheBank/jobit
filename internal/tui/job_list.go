@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/table"
@@ -110,7 +109,6 @@ func computeMinColWidths(columns []table.Column, rows []table.Row) []int {
 	for idx, column := range columns {
 		widths[idx] = lipgloss.Width(column.Title)
 	}
-	log.Printf("(b rows)Column widths: %v\n", widths)
 
 	for _, row := range rows {
 		for idx, cell := range row {
@@ -120,6 +118,5 @@ func computeMinColWidths(columns []table.Column, rows []table.Row) []int {
 		}
 	}
 
-	log.Printf("(a rows)Column widths: %v\n", widths)
 	return widths
 }
