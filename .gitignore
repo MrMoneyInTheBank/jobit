@@ -39,3 +39,6 @@ todo.md
 
 # Task runner
 .task/*
+
+# Logs
+*.log
