@@ -52,6 +52,7 @@ func InitJobList(jobs []model.JobApplication) JobList {
 		{Title: "Application Date"},
 		{Title: "Status"},
 		{Title: "Referral"},
+		{Title: "Pay"},
 	}
 	rows := make([]table.Row, len(jobs))
 
@@ -63,6 +64,13 @@ func InitJobList(jobs []model.JobApplication) JobList {
 			job.ApplicationDate.Format("2006-01-02"),
 			string(job.Status),
 			strconv.FormatBool(job.Referral),
+			func() string {
+				if job.Pay == nil {
+					return "Unknown"
+				} else {
+					return job.Pay.String()
+				}
+			}(),
 		}
 	}
 
