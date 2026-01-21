@@ -46,8 +46,7 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (jl *JobList) View() string {
-	content := baseStyle.Render(jl.JobsTable.View())
-	return content
+	return baseStyle.Render(jl.JobsTable.View())
 }
 
 func InitJobList(jobs []model.JobApplication) JobList {
