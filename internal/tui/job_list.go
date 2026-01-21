@@ -65,7 +65,8 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (jl *JobList) View() string {
-	return baseStyle.Render(jl.JobsTable.View()) + "\n"
+	content := baseStyle.Render(jl.JobsTable.View())
+	return lipgloss.Place(jl.width, jl.height, lipgloss.Center, lipgloss.Center, content)
 }
 
 func InitJobList(jobs []model.JobApplication) JobList {
