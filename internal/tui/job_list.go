@@ -18,8 +18,7 @@ type JobList struct {
 
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("240")).
-	Align(lipgloss.Center)
+	BorderForeground(lipgloss.Color("240"))
 
 func (jl *JobList) Init() tea.Cmd {
 	return tea.SetWindowTitle("Jobit")
@@ -57,9 +56,8 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		jl.width = msg.Width
 		jl.height = msg.Height
-		tea.ClearScreen()
 		jl.resizeColumns()
-		return jl, nil
+		return jl, tea.ClearScreen
 
 	case tea.KeyMsg:
 		switch msg.String() {
