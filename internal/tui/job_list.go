@@ -25,39 +25,12 @@ func (jl *JobList) Init() tea.Cmd {
 	return tea.SetWindowTitle("\U0001F4BC Jobit")
 }
 
-func (jl *JobList) resizeColumns() {
-	idW := 5 // index width
-
-	available := max(jl.width-2, 20)    // total remaining width
-	remaining := max(available-idW, 10) // remaining width after accounting for index
-
-	companyW := remaining / 2 // split remaining width in half
-	positionW := remaining - companyW
-
-	jl.JobsTable.SetColumns([]table.Column{
-		{Title: "ID", Width: idW},
-		{Title: "Company Name", Width: companyW},
-		{Title: "Position", Width: positionW},
-	})
-}
-
 func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
-	case tea.WindowSizeMsg:
-		log.Printf("Window size changed to %d x %d\n", msg.Width, msg.Height)
-		jl.width, jl.height = msg.Width, msg.Height
-		jl.resizeColumns()
-		return jl, nil
-
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return jl, tea.Quit
-		case "enter":
-			jl.width = 45
-			jl.resizeColumns()
-			return jl, nil
 		}
 	}
 	return jl, nil
