@@ -55,6 +55,10 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return jl, tea.Quit
+		case "enter":
+			jl.width = 45
+			jl.resizeColumns()
+			return jl, nil
 		}
 	}
 	return jl, nil
