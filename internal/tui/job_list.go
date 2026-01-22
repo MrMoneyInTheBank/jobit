@@ -118,6 +118,10 @@ func computeMinColWidths(columns []table.Column, rows []table.Row) []int {
 func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		jl.width = msg.Width
+		jl.height = msg.Height
+		return jl, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -135,5 +139,10 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (jl *JobList) View() string {
-	return baseStyle.Render(jl.JobsTable.View())
+	if jl.width == 0 {
+		return ""
+	}
+
+	table := baseStyle.Render(jl.JobsTable.View())
+	return lipgloss.Place(jl.width, jl.height, lipgloss.Center, lipgloss.Center, table)
 }
