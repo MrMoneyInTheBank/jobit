@@ -57,6 +57,9 @@ func constructRow(job model.JobApplication) table.Row {
 		remoteToString(job.Remote),
 		payToString(job.Pay),
 		rankingToString(job.Ranking),
+		"No notes",
+		"No link",
+		"No website",
 	}
 }
 
@@ -71,6 +74,9 @@ func InitJobList(jobs []model.JobApplication) JobList {
 		{Title: "Remote"},
 		{Title: "Pay"},
 		{Title: "Ranking"},
+		{Title: "Notes"},
+		{Title: "Job Link"},
+		{Title: "Company Link"},
 	}
 	rows := make([]table.Row, len(jobs))
 
