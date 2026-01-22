@@ -24,19 +24,6 @@ func (jl *JobList) Init() tea.Cmd {
 	return tea.SetWindowTitle("\U0001F4BC Jobit")
 }
 
-func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return jl, tea.Quit
-		case "esc":
-			if jl.JobsTable.Focused() {
-				jl.JobsTable.Blur()
-			} else {
-				jl.JobsTable.Focus()
-			}
 func constructRow(job model.JobApplication) table.Row {
 	remoteToString := func(remote *model.RemoteType) string {
 		if remote == nil {
@@ -120,4 +107,27 @@ func computeMinColWidths(columns []table.Column, rows []table.Row) []int {
 	}
 
 	return widths
+}
+
+func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return jl, tea.Quit
+		case "esc":
+			if jl.JobsTable.Focused() {
+				jl.JobsTable.Blur()
+			} else {
+				jl.JobsTable.Focus()
+			}
+		}
+	}
+	jl.JobsTable, cmd = jl.JobsTable.Update(msg)
+	return jl, cmd
+}
+
+func (jl *JobList) View() string {
+	return baseStyle.Render(jl.JobsTable.View())
 }
