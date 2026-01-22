@@ -11,10 +11,9 @@ import (
 )
 
 type JobList struct {
-	JobsTable           table.Model
-	width               int
-	height              int
-	minimumColumnWidths []int
+	JobsTable table.Model
+	width     int
+	height    int
 }
 
 var baseStyle = lipgloss.NewStyle().
@@ -100,7 +99,7 @@ func InitJobList(jobs []model.JobApplication) JobList {
 	)
 	t.SetStyles(s)
 
-	return JobList{JobsTable: t, minimumColumnWidths: minimumColumnWidths}
+	return JobList{JobsTable: t}
 }
 
 func computeMinColWidths(columns []table.Column, rows []table.Row) []int {
