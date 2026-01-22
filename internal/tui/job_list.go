@@ -37,14 +37,40 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				jl.JobsTable.Focus()
 			}
+func constructRow(job model.JobApplication) table.Row {
+	remoteToString := func(remote *model.RemoteType) string {
+		if remote == nil {
+			return "Unknown"
+		} else {
+			return string(*remote)
 		}
 	}
-	jl.JobsTable, cmd = jl.JobsTable.Update(msg)
-	return jl, cmd
-}
+	payToString := func(pay *model.Pay) string {
+		if pay == nil {
+			return "Unknown"
+		} else {
+			return job.Pay.String()
+		}
+	}
+	rankingToString := func(ranking *int) string {
+		if ranking == nil {
+			return "0"
+		} else {
+			return strconv.Itoa(*ranking)
+		}
+	}
 
-func (jl *JobList) View() string {
-	return baseStyle.Render(jl.JobsTable.View())
+	return table.Row{
+		strconv.Itoa(int(job.ID)),
+		job.CompanyName,
+		job.Position,
+		job.ApplicationDate.Format("2006-01-02"),
+		string(job.Status),
+		strconv.FormatBool(job.Referral),
+		remoteToString(job.Remote),
+		payToString(job.Pay),
+		rankingToString(job.Ranking),
+	}
 }
 
 func InitJobList(jobs []model.JobApplication) JobList {
@@ -55,26 +81,14 @@ func InitJobList(jobs []model.JobApplication) JobList {
 		{Title: "Date Applied"},
 		{Title: "Status"},
 		{Title: "Referral"},
+		{Title: "Remote"},
 		{Title: "Pay"},
+		{Title: "Ranking"},
 	}
 	rows := make([]table.Row, len(jobs))
 
 	for idx, job := range jobs {
-		rows[idx] = table.Row{
-			strconv.Itoa(int(job.ID)),
-			job.CompanyName,
-			job.Position,
-			job.ApplicationDate.Format("2006-01-02"),
-			string(job.Status),
-			strconv.FormatBool(job.Referral),
-			func() string {
-				if job.Pay == nil {
-					return "Unknown"
-				} else {
-					return job.Pay.String()
-				}
-			}(),
-		}
+		rows[idx] = constructRow(job)
 	}
 	minimumColumnWidths := computeMinColWidths(columns, rows)
 	for idx := range columns {
