@@ -81,23 +81,11 @@ func InitJobList(jobs []model.JobApplication) JobList {
 		columns[idx].Width = minimumColumnWidths[idx]
 	}
 
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
 	)
-	t.SetStyles(s)
 
 	return JobList{JobsTable: t}
 }
