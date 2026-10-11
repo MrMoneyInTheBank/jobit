@@ -122,10 +122,12 @@ func (jl *JobList) resize() {
 	jl.JobsTable.SetColumns(columns(w))
 	jl.JobsTable.SetWidth(w)
 	jl.JobsTable.SetHeight(h)
+	progress := jl.details.ScrollPercent()
 	jl.details.Width = w
 	jl.details.Height = h
 	if jl.screen == detailsScreen {
 		jl.setDetails()
+		jl.details.SetYOffset(int(progress * float64(max(0, jl.details.TotalLineCount()-jl.details.Height))))
 	}
 }
 func (jl *JobList) selected() *model.StoredJobApplication {
