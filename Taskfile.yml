@@ -4,6 +4,10 @@ env:
   CGO_ENABLED: "1"
 
 tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
   run:
     desc: Build and run jobit
     cmds:
@@ -13,6 +17,8 @@ tasks:
     desc: Build jobit into bin/jobit
     cmds:
       - go build -o bin/jobit ./cmd/jobit
+    generates:
+      - bin/jobit
   install:
     desc: Install jobit from this checkout into Go's bin directory
     cmds:
