@@ -60,9 +60,10 @@ The schema stores pay in separate nullable min/max/currency columns.
 
 ## Keyboard contract
 
-These are the intended bindings across screens. Currently only the list,
-its table navigation, and quit are implemented; sort, filter, details, and
-forms remain planned.
+These are the intended bindings across screens. The list, scrollable details,
+and an essentials add form are implemented.
+Sorting and text/status filtering are implemented. Editing and the full
+application form remain planned.
 
 | Action | Keys | Screen / behavior |
 | --- | --- | --- |
@@ -129,3 +130,23 @@ return an error identifying the row. Startup errors are written to stderr.
 Persistence tests cover empty databases, DSN precedence, file reopen, optional
 fields, invalid IDs, missing rows, schema failures, and seed rollback on insert
 and commit failures.
+
+## Application list and details
+
+The list shows company, position, location, and ranking. Missing locations and
+unranked applications display a dash. The selected row is highlighted; the
+header shows its position in the list. Column widths and visible row count
+adapt to the terminal, with long values shortened in the list.
+
+Press Enter for every stored field, including pay, notes, and links. Details
+wrap and scroll with j/k, arrows, or PageUp/PageDown. Esc returns to the same
+selected row. Below 24 columns or 9 lines, a resize prompt replaces the view;
+Ctrl+C remains available.
+
+Press a to add an application, including from the empty list. The current
+essentials form accepts company, position, location, and ranking. Company and
+position are required; ranking is blank/0 for unranked or 1–5. Tab/Shift+Tab
+move between fields, Backspace deletes, Ctrl+S saves, and Esc cancels. The
+form defaults to submitted status and today's UTC date. The saved row is
+selected, and errors keep the input available for correction. Remaining fields
+and richer editing are planned for the full form in section 6.
