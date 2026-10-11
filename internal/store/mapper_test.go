@@ -50,6 +50,45 @@ func TestLegacySchemaIsPreserved(t *testing.T) {
 	}
 }
 
+func TestEmptyLegacySchemaIsRebuilt(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
+	db, err := OpenDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`CREATE TABLE job_applications (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		company_name TEXT NOT NULL,
+		position TEXT NOT NULL,
+		application_date TEXT NOT NULL,
+		status TEXT NOT NULL,
+		referral INTEGER NOT NULL,
+		remote TEXT,
+		location TEXT,
+		pay_min INTEGER,
+		pay_max INTEGER,
+		pay_currency TEXT,
+		ranking INTEGER,
+		notes TEXT,
+		job_positing_link TEXT,
+		company_website_link TEXT
+	)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := InitDB(db); err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckSchema(db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AddJobApplication(db, testApp); err != nil {
+		t.Fatal("rebuilt schema cannot save an application:", err)
+	}
+}
+
 func TestRequiredDatabaseValues(t *testing.T) {
 	db := newTestDB(t)
 	for _, rank := range []model.Ranking{0, 6} {

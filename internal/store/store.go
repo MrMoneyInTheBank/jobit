@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -52,11 +53,53 @@ func InitDB(db *sql.DB) error {
 	if _, err := db.Exec(schemaSQL); err != nil {
 		return err
 	}
-	return CheckSchema(db)
+	if err := CheckSchema(db); err != nil {
+		if !errors.Is(err, errSchemaMismatch) {
+			return err
+		}
+		return replaceEmptySchema(db)
+	}
+	return nil
+}
+
+var errSchemaMismatch = errors.New("database schema does not match this Jobit build; back up and remove the old database to start fresh")
+
+// replaceEmptySchema refreshes a pre-release database only when it has no rows.
+func replaceEmptySchema(db *sql.DB) error {
+	transaction, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer transaction.Rollback()
+	var applicationCount int
+	if err := transaction.QueryRow("SELECT COUNT(*) FROM job_applications").Scan(&applicationCount); err != nil {
+		return err
+	}
+	if applicationCount != 0 {
+		return errSchemaMismatch
+	}
+	if _, err := transaction.Exec("DROP TABLE job_applications"); err != nil {
+		return err
+	}
+	if _, err := transaction.Exec(schemaSQL); err != nil {
+		return err
+	}
+	if err := checkSchema(transaction); err != nil {
+		return err
+	}
+	return transaction.Commit()
 }
 
 // CheckSchema verifies that a database uses the current layout without writing to it.
 func CheckSchema(db *sql.DB) error {
+	return checkSchema(db)
+}
+
+type schemaQuerier interface {
+	Query(string, ...any) (*sql.Rows, error)
+}
+
+func checkSchema(db schemaQuerier) error {
 	rows, err := db.Query("PRAGMA table_info(job_applications)")
 	if err != nil {
 		return err
@@ -78,11 +121,11 @@ func CheckSchema(db *sql.DB) error {
 		return err
 	}
 	if len(actual) != len(expected) {
-		return fmt.Errorf("database schema does not match this Jobit build; back up and remove the old database to start fresh")
+		return errSchemaMismatch
 	}
 	for index, name := range expected {
 		if actual[index] != name {
-			return fmt.Errorf("database schema does not match this Jobit build; back up and remove the old database to start fresh")
+			return errSchemaMismatch
 		}
 	}
 	return nil
