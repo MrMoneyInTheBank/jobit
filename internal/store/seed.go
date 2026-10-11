@@ -56,6 +56,7 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 		ApplicationDate: now.AddDate(0, 0, -r.Intn(180)), // last 6 months
 		Status:          statuses[r.Intn(len(statuses))],
 		Referral:        r.Float64() < 0.3, // 30% referral
+		Rank:            model.Ranking(1 + r.Intn(5)),
 	}
 
 	if r.Float64() < 0.8 {
@@ -78,11 +79,6 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 			Max:      &max,
 			Currency: &cur,
 		}
-	}
-
-	if r.Float64() < 0.5 {
-		rank := 1 + r.Intn(5)
-		app.Rank = model.Ranking(rank)
 	}
 
 	if r.Float64() < 0.4 {
@@ -114,8 +110,7 @@ func SeedDB(db *sql.DB, count int) error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for range count {
 		app := randomJobApplication(r)
-		boundedApp := bindJobApplication(app)
-		if _, err2 := tx.ExecContext(ctx, insertQuery, boundedApp.insertArgs()...); err2 != nil {
+		if _, err2 := tx.ExecContext(ctx, insertQuery, applicationArgs(app)...); err2 != nil {
 			return err2
 		}
 	}

@@ -46,7 +46,7 @@ func TestCSVExport(t *testing.T) {
 		t.Fatal(err)
 	}
 	zero := 0
-	app := model.JobApplication{CompanyName: "Acme, Inc.", Position: "Engineer", ApplicationDate: time.Now(), Status: model.StatusSubmitted, Notes: "line one\n\"quoted\" line two", Pay: &model.Pay{Min: &zero}}
+	app := model.JobApplication{CompanyName: "Acme, Inc.", Position: "Engineer", ApplicationDate: time.Now(), Status: model.StatusSubmitted, Rank: model.RankThree, Notes: "line one\n\"quoted\" line two", Pay: &model.Pay{Min: &zero}}
 	if _, err = store.AddJobApplication(db, app); err != nil {
 		t.Fatal(err)
 	}

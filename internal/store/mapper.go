@@ -9,175 +9,89 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
 )
 
-type boundJobApplication struct {
-	id                 int64
-	companyName        string
-	position           string
-	applicationDate    string
-	status             string
-	referral           bool
-	remote             sql.NullString
-	location           sql.NullString
-	payMin             sql.NullInt64
-	payMax             sql.NullInt64
-	payCurrency        sql.NullString
-	ranking            sql.NullInt64
-	notes              sql.NullString
-	jobPostingLink     sql.NullString
-	companyWebsiteLink sql.NullString
-}
-
-func bindJobApplication(application model.JobApplication) boundJobApplication {
-	boundedApp := boundJobApplication{
-		companyName:     application.CompanyName,
-		position:        application.Position,
-		applicationDate: application.ApplicationDate.UTC().Format("2006-01-02"),
-		status:          string(application.Status),
-		referral:        application.Referral,
-	}
-
-	if application.WorkMode != "" {
-		boundedApp.remote = sql.NullString{String: string(application.WorkMode), Valid: true}
-	}
-
-	if application.Location != "" {
-		boundedApp.location = sql.NullString{String: application.Location, Valid: true}
-	}
-
-	if application.Pay != nil {
-		if application.Pay.Min != nil {
-			boundedApp.payMin = sql.NullInt64{Int64: int64(*application.Pay.Min), Valid: true}
-		}
-
-		if application.Pay.Max != nil {
-			boundedApp.payMax = sql.NullInt64{Int64: int64(*application.Pay.Max), Valid: true}
-		}
-
-		if application.Pay.Currency != nil {
-			boundedApp.payCurrency = sql.NullString{String: *application.Pay.Currency, Valid: true}
-		}
-	}
-
-	if application.Rank != 0 {
-		boundedApp.ranking = sql.NullInt64{Int64: int64(application.Rank), Valid: true}
-	}
-	if application.Notes != "" {
-		boundedApp.notes = sql.NullString{String: application.Notes, Valid: true}
-	}
-	if application.JobPostingLink != "" {
-		boundedApp.jobPostingLink = sql.NullString{String: application.JobPostingLink, Valid: true}
-	}
-	if application.CompanyWebsiteLink != "" {
-		boundedApp.companyWebsiteLink = sql.NullString{String: application.CompanyWebsiteLink, Valid: true}
-	}
-
-	return boundedApp
-}
-
-func (b boundJobApplication) insertArgs() []any {
-	return []any{
-		b.companyName,
-		b.position,
-		b.applicationDate,
-		b.status,
-		b.referral,
-		b.remote,
-		b.location,
-		b.payMin,
-		b.payMax,
-		b.payCurrency,
-		b.ranking,
-		b.notes,
-		b.jobPostingLink,
-		b.companyWebsiteLink,
-	}
-}
-
 var ErrInvalidID = errors.New("Invalid ID")
 
-func bindJobApplicationPatch(app model.StoredJobApplication) (boundJobApplication, error) {
-	if app.ID <= 0 {
-		return boundJobApplication{}, ErrInvalidID
+// applicationArgs converts optional pay fields to SQL NULLs. Other fields use model values.
+func applicationArgs(app model.JobApplication) []any {
+	var min, max, currency any
+	if app.Pay != nil {
+		if app.Pay.Min != nil {
+			min = *app.Pay.Min
+		}
+		if app.Pay.Max != nil {
+			max = *app.Pay.Max
+		}
+		if app.Pay.Currency != nil {
+			currency = *app.Pay.Currency
+		}
 	}
-	boundedApp := bindJobApplication(app.JobApplication)
-	boundedApp.id = app.ID
-	return boundedApp, nil
-}
-
-func (b boundJobApplication) updateArgs() []any {
 	return []any{
-		b.companyName,
-		b.position,
-		b.applicationDate,
-		b.status,
-		b.referral,
-		b.remote,
-		b.location,
-		b.payMin,
-		b.payMax,
-		b.payCurrency,
-		b.ranking,
-		b.notes,
-		b.jobPostingLink,
-		b.companyWebsiteLink,
-		b.id,
+		app.CompanyName, app.Position, app.ApplicationDate.UTC().Format("2006-01-02"),
+		string(app.Status), app.Referral, string(app.WorkMode), app.Location,
+		min, max, currency, int(app.Rank), app.Notes, app.JobPostingLink, app.CompanyWebsiteLink,
 	}
 }
 
-func (b boundJobApplication) toModel() (model.StoredJobApplication, error) {
-	date, err := time.Parse("2006-01-02", b.applicationDate)
+func validateApplication(app model.JobApplication) error {
+	if app.CompanyName == "" || app.Position == "" {
+		return fmt.Errorf("company and position are required")
+	}
+	if app.ApplicationDate.IsZero() {
+		return fmt.Errorf("application date is required")
+	}
+	if !app.Rank.Valid() {
+		return fmt.Errorf("ranking must be 1–5")
+	}
+	switch app.Status {
+	case model.StatusSubmitted, model.StatusInterviewing, model.StatusOffer, model.StatusRejected, model.StatusAccepted:
+	default:
+		return fmt.Errorf("invalid status %q", app.Status)
+	}
+	switch app.WorkMode {
+	case "", model.WorkModeRemote, model.WorkModeHybrid, model.WorkModeOnsite:
+	default:
+		return fmt.Errorf("invalid work mode %q", app.WorkMode)
+	}
+	return nil
+}
+
+type rowScanner interface{ Scan(...any) error }
+
+func scanApplication(row rowScanner) (model.StoredJobApplication, error) {
+	var stored model.StoredJobApplication
+	app := &stored.JobApplication
+	var date, status, mode string
+	var rank int64
+	var min, max sql.NullInt64
+	var currency sql.NullString
+	if err := row.Scan(
+		&stored.ID, &app.CompanyName, &app.Position, &date, &status,
+		&app.Referral, &mode, &app.Location, &min, &max, &currency,
+		&rank, &app.Notes, &app.JobPostingLink, &app.CompanyWebsiteLink,
+	); err != nil {
+		return stored, err
+	}
+	parsed, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		return model.StoredJobApplication{}, fmt.Errorf("application %d: invalid application date %q: %w", b.id, b.applicationDate, err)
+		return stored, fmt.Errorf("application %d: invalid application date %q: %w", stored.ID, date, err)
 	}
-	app := model.JobApplication{
-		CompanyName:     b.companyName,
-		Position:        b.position,
-		ApplicationDate: date,
-		Status:          model.Status(b.status),
-		Referral:        b.referral,
-	}
-
-	if b.remote.Valid {
-		app.WorkMode = model.WorkMode(b.remote.String)
-	}
-
-	if b.location.Valid {
-		app.Location = b.location.String
-	}
-
-	if b.payMin.Valid || b.payMax.Valid || b.payCurrency.Valid {
-		p := &model.Pay{}
-
-		if b.payMin.Valid {
-			v := int(b.payMin.Int64)
-			p.Min = &v
+	app.ApplicationDate = parsed
+	app.Status = model.Status(status)
+	app.WorkMode = model.WorkMode(mode)
+	app.Rank = model.Ranking(rank)
+	if min.Valid || max.Valid || currency.Valid {
+		app.Pay = &model.Pay{}
+		if min.Valid {
+			v := int(min.Int64)
+			app.Pay.Min = &v
 		}
-		if b.payMax.Valid {
-			v := int(b.payMax.Int64)
-			p.Max = &v
+		if max.Valid {
+			v := int(max.Int64)
+			app.Pay.Max = &v
 		}
-		if b.payCurrency.Valid {
-			p.Currency = &b.payCurrency.String
+		if currency.Valid {
+			app.Pay.Currency = &currency.String
 		}
-
-		app.Pay = p
 	}
-
-	if b.ranking.Valid {
-		app.Rank = model.Ranking(b.ranking.Int64)
-	}
-
-	if b.notes.Valid {
-		app.Notes = b.notes.String
-	}
-
-	if b.jobPostingLink.Valid {
-		app.JobPostingLink = b.jobPostingLink.String
-	}
-
-	if b.companyWebsiteLink.Valid {
-		app.CompanyWebsiteLink = b.companyWebsiteLink.String
-	}
-
-	return model.StoredJobApplication{ID: b.id, JobApplication: app}, nil
+	return stored, nil
 }

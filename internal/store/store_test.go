@@ -15,6 +15,7 @@ var testApp model.JobApplication = model.JobApplication{
 	ApplicationDate: time.Now().UTC(),
 	Status:          model.StatusSubmitted,
 	Referral:        false,
+	Rank:            model.RankThree,
 }
 
 func mustOpenDB(t *testing.T) *sql.DB {
@@ -51,9 +52,7 @@ func TestOpenDB(t *testing.T) {
 
 func TestInitDB(t *testing.T) {
 	db := newTestDB(t)
-	boundedApp := bindJobApplication(testApp)
-
-	if _, err := db.Exec(insertQuery, boundedApp.insertArgs()...); err != nil {
+	if _, err := db.Exec(insertQuery, applicationArgs(testApp)...); err != nil {
 		t.Fatalf("insert: %v", err)
 	}
 }
@@ -200,7 +199,7 @@ func TestRoundTripAndClear(t *testing.T) {
 		t.Fatalf("round trip mismatch: %+v", got)
 	}
 	var noPay *model.Pay
-	patch := model.JobApplicationPatch{Location: ptr(""), Notes: ptr(""), Pay: &noPay, Rank: ptr(model.Ranking(0))}
+	patch := model.JobApplicationPatch{Location: ptr(""), Notes: ptr(""), Pay: &noPay, Rank: ptr(model.RankOne)}
 	if err := PatchJobApplication(db, *got, patch); err != nil {
 		t.Fatal(err)
 	}
