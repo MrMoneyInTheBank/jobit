@@ -82,9 +82,6 @@ func optional(s string) string {
 	return plain(s)
 }
 func ranking(r model.Ranking) string {
-	if r == 0 {
-		return "—"
-	}
 	return strconv.Itoa(int(r)) + "/5"
 }
 func constructRow(stored model.StoredJobApplication) table.Row {

@@ -36,7 +36,7 @@ func TestDetailsFullRecord(t *testing.T) {
 
 func TestDetailsMissingAndPartialValues(t *testing.T) {
 	content := ansi.Strip(detailsContent(model.StoredJobApplication{}, 80))
-	for _, field := range []string{"Location", "Ranking", "Status", "Applied", "Work mode", "Notes", "Job posting", "Company website"} {
+	for _, field := range []string{"Location", "Status", "Applied", "Work mode", "Notes", "Job posting", "Company website"} {
 		if !strings.Contains(content, field+"\n—") {
 			t.Errorf("missing placeholder for %s", field)
 		}

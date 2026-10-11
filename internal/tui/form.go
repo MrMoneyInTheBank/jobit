@@ -40,7 +40,7 @@ var formFields = [fieldCount]formField{
 	{"Company *", "Required · company name", nil},
 	{"Position *", "Required · role or job title", nil},
 	{"Location", "Optional · city, region, or remote", nil},
-	{"Ranking", "Blank or 0 = unranked · otherwise 1–5", nil},
+	{"Ranking *", "Required · 1–5", nil},
 	{"Application date *", "YYYY-MM-DD · defaults to today in UTC", nil},
 	{"Status *", "←/→ choose · submitted, interviewing, offer, rejected, accepted", []string{"submitted", "interviewing", "offer", "rejected", "accepted"}},
 	{"Referral *", "←/→ choose · yes or no", []string{"no", "yes"}},
@@ -91,12 +91,9 @@ func applicationFromFields(fields [fieldCount]string) (model.JobApplication, int
 	if !contains(formFields[modeField].choices, mode) {
 		return fail(modeField, "Work mode must be remote, hybrid, onsite, or blank")
 	}
-	rank := 0
-	if f[rankField] != "" {
-		rank, err = strconv.Atoi(f[rankField])
-		if err != nil || rank < 0 || rank > 5 {
-			return fail(rankField, "Ranking must be 0–5 or blank")
-		}
+	rank, err := strconv.Atoi(f[rankField])
+	if err != nil || !model.Ranking(rank).Valid() {
+		return fail(rankField, "Ranking must be 1–5")
 	}
 	var pay model.Pay
 	for _, i := range []int{minField, maxField} {
@@ -329,7 +326,7 @@ func validTypedValue(field int, value string) bool {
 	}
 	switch field {
 	case rankField:
-		return value == "" || (len(value) == 1 && value[0] >= '0' && value[0] <= '5')
+		return value == "" || (len(value) == 1 && value[0] >= '1' && value[0] <= '5')
 	case minField, maxField:
 		if value == "" {
 			return true

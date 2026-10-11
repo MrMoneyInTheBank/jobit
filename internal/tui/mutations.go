@@ -25,9 +25,7 @@ func fieldsFromApplication(a model.JobApplication) [fieldCount]string {
 	f[companyField] = a.CompanyName
 	f[positionField] = a.Position
 	f[locationField] = a.Location
-	if a.Rank != 0 {
-		f[rankField] = strconv.Itoa(int(a.Rank))
-	}
+	f[rankField] = strconv.Itoa(int(a.Rank))
 	if !a.ApplicationDate.IsZero() {
 		f[dateField] = a.ApplicationDate.UTC().Format("2006-01-02")
 	}

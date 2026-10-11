@@ -165,7 +165,7 @@ func TestSaveFailureRetainsInput(t *testing.T) {
 	})
 	key(&j, "j")
 	key(&j, "a")
-	copy(j.fields[:4], []string{"Acme", "Engineer", "", ""})
+	copy(j.fields[:4], []string{"Acme", "Engineer", "", "3"})
 	cmd := key(&j, "ctrl+s")
 	j.Update(cmd())
 	if j.screen != addScreen || j.fields[0] != "Acme" || j.formError != "database locked" {

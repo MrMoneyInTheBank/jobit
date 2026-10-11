@@ -68,9 +68,6 @@ func (jl *JobList) rebuild(preferred int64) {
 			av, bv = a.JobApplication.Location, b.JobApplication.Location
 		case "Ranking":
 			ar, br := a.JobApplication.Rank, b.JobApplication.Rank
-			if (ar == 0) != (br == 0) {
-				return ar != 0
-			}
 			comparison = cmp.Compare(ar, br)
 		}
 		if choice.field != "Added" && choice.field != "Ranking" {

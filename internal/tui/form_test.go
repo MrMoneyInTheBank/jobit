@@ -15,6 +15,7 @@ func validFields() [fieldCount]string {
 	f := defaultFields()
 	f[companyField] = " Acme "
 	f[positionField] = " Engineer "
+	f[rankField] = "3"
 	return f
 }
 func TestFormValidation(t *testing.T) {
@@ -26,7 +27,7 @@ func TestFormValidation(t *testing.T) {
 		{"company", companyField, " "}, {"position", positionField, ""},
 		{"invalid date", dateField, "2026-02-30"}, {"date format", dateField, "11/10/2026"},
 		{"missing date", dateField, ""}, {"status", statusField, "pending"}, {"referral", referralField, "maybe"},
-		{"work mode", modeField, "office"}, {"rank negative", rankField, "-1"}, {"rank high", rankField, "6"},
+		{"work mode", modeField, "office"}, {"rank missing", rankField, ""}, {"rank zero", rankField, "0"}, {"rank negative", rankField, "-1"}, {"rank high", rankField, "6"},
 		{"rank fractional", rankField, "2.5"}, {"pay negative", minField, "-1"}, {"pay fractional", maxField, "1.5"},
 		{"pay comma", minField, "1,000"}, {"pay overflow", maxField, strings.Repeat("9", 100)},
 		{"currency length", currencyField, "US"}, {"currency characters", currencyField, "1$!"},
@@ -53,7 +54,7 @@ func TestFormOptionalValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if app.Pay != nil || app.Referral || app.Rank != 0 || app.WorkMode != "" {
+	if app.Pay != nil || app.Referral || app.Rank != model.RankThree || app.WorkMode != "" {
 		t.Fatal("omitted values changed")
 	}
 	if app.CompanyName != "Acme" || app.Position != "Engineer" {

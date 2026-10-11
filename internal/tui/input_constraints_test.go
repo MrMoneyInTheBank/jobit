@@ -29,7 +29,7 @@ func TestRejectInvalidTyping(t *testing.T) {
 		field int
 		value string
 	}{
-		{rankField, "6"}, {rankField, "-1"}, {minField, "1.5"}, {maxField, "-3"},
+		{rankField, "6"}, {rankField, "0"}, {rankField, "-1"}, {minField, "1.5"}, {maxField, "-3"},
 		{minField, "1,000"}, {currencyField, "12!"}, {currencyField, "DOLLARS"},
 		{dateField, "2026-02-30"}, {dateField, "2026-13-01"}, {dateField, "tomorrow"},
 	} {

@@ -62,6 +62,16 @@ func (p *Pay) String() string {
 
 type Ranking uint8
 
+const (
+	RankOne Ranking = iota + 1
+	RankTwo
+	RankThree
+	RankFour
+	RankFive
+)
+
+func (r Ranking) Valid() bool { return r >= RankOne && r <= RankFive }
+
 type JobApplication struct {
 	CompanyName        string
 	Position           string

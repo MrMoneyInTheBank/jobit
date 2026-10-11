@@ -14,7 +14,7 @@ func controlJobs() []model.StoredJobApplication {
 	names := []string{"beta", "Acme", "acme", "Gamma"}
 	var result []model.StoredJobApplication
 	for i, name := range names {
-		result = append(result, model.StoredJobApplication{ID: int64(i + 1), JobApplication: model.JobApplication{CompanyName: name, Position: "Engineer", Status: model.StatusSubmitted}})
+		result = append(result, model.StoredJobApplication{ID: int64(i + 1), JobApplication: model.JobApplication{CompanyName: name, Position: "Engineer", Status: model.StatusSubmitted, Rank: model.RankOne}})
 	}
 	result[0].JobApplication.Location = "London"
 	result[0].JobApplication.Rank = 3
@@ -40,7 +40,7 @@ func TestSortDeterminismAndSelection(t *testing.T) {
 	}{
 		{2, []int64{2, 3, 1, 4}}, {3, []int64{4, 1, 2, 3}},
 		{6, []int64{1, 2, 3, 4}}, {7, []int64{2, 1, 3, 4}},
-		{8, []int64{1, 2, 3, 4}}, {9, []int64{2, 1, 3, 4}},
+		{8, []int64{3, 4, 1, 2}}, {9, []int64{2, 1, 3, 4}},
 		{1, []int64{4, 3, 2, 1}},
 	} {
 		j.sortIndex = tc.sort
