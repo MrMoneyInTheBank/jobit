@@ -55,3 +55,19 @@ opening a PR, and run the race suite for concurrent or persistence changes.
 
 Keep commits small and coherent. In a PR, explain the behavior changed, why it
 changed, how it was checked, and any effect on stored data or CLI use.
+
+## Commit messages
+
+Use `type(scope): message` for the subject. Pick a type such as `feat`, `fix`,
+`docs`, `test`, `refactor`, or `chore`, and name the area changed in the scope
+(for example, `store`, `tui`, `cmd`, or `task`). Write the message in the
+imperative, start it with a lowercase letter, omit the trailing period, and
+keep the full subject under 72 characters. Examples:
+`fix(store): preserve existing applications` and
+`docs(readme): explain task workflows`.
+
+Add a blank line and a body when the reason or tradeoff needs explanation.
+Keep unrelated changes in separate commits.
+
+(yeah I know I haven't been following this strictly either but this is one of
+those "do as I say, not as I do moments")
