@@ -39,25 +39,25 @@ func (p *Pay) String() string {
 		return "Unknown"
 	}
 
-	var b strings.Builder
+	var display strings.Builder
 
 	if p.Currency != nil {
-		b.WriteString(*p.Currency)
-		b.WriteByte(' ')
+		display.WriteString(*p.Currency)
+		display.WriteByte(' ')
 	}
 
 	switch {
 	case p.Min != nil && p.Max != nil:
-		fmt.Fprintf(&b, "%d - %d", *p.Min, *p.Max)
+		fmt.Fprintf(&display, "%d - %d", *p.Min, *p.Max)
 	case p.Min != nil:
-		fmt.Fprintf(&b, "%d+", *p.Min)
+		fmt.Fprintf(&display, "%d+", *p.Min)
 	case p.Max != nil:
-		fmt.Fprintf(&b, "<= %d", *p.Max)
+		fmt.Fprintf(&display, "<= %d", *p.Max)
 	default:
-		b.WriteString("Unknown")
+		display.WriteString("Unknown")
 	}
 
-	return strings.TrimSpace(b.String())
+	return strings.TrimSpace(display.String())
 }
 
 type Ranking uint8
@@ -70,7 +70,9 @@ const (
 	RankFive
 )
 
-func (r Ranking) Valid() bool { return r >= RankOne && r <= RankFive }
+func (rank Ranking) Valid() bool {
+	return rank >= RankOne && rank <= RankFive
+}
 
 type JobApplication struct {
 	CompanyName        string
@@ -87,46 +89,46 @@ type JobApplication struct {
 	CompanyWebsiteLink string
 }
 
-func ptrEq[T comparable](a, b *T) bool {
-	if a == b {
+func ptrEq[T comparable](left, right *T) bool {
+	if left == right {
 		return true
 	}
-	if a == nil || b == nil {
+	if left == nil || right == nil {
 		return false
 	}
-	return *a == *b
+	return *left == *right
 }
 
-func payEq(a, b *Pay) bool {
-	if a.isEmpty() || b.isEmpty() {
-		return a.isEmpty() && b.isEmpty()
+func payEq(left, right *Pay) bool {
+	if left.isEmpty() || right.isEmpty() {
+		return left.isEmpty() && right.isEmpty()
 	}
 
-	return ptrEq(a.Min, b.Min) &&
-		ptrEq(a.Max, b.Max) &&
-		ptrEq(a.Currency, b.Currency)
+	return ptrEq(left.Min, right.Min) &&
+		ptrEq(left.Max, right.Max) &&
+		ptrEq(left.Currency, right.Currency)
 }
 
-func sameDay(t1, t2 time.Time) bool {
-	y1, m1, d1 := t1.UTC().Date()
-	y2, m2, d2 := t2.UTC().Date()
-	return y1 == y2 && m1 == m2 && d1 == d2
+func sameDay(left, right time.Time) bool {
+	leftYear, leftMonth, leftDay := left.UTC().Date()
+	rightYear, rightMonth, rightDay := right.UTC().Date()
+	return leftYear == rightYear && leftMonth == rightMonth && leftDay == rightDay
 }
 
 // Equal compares application data, treating dates as UTC calendar days.
-func (a JobApplication) Equal(b JobApplication) bool {
-	return a.CompanyName == b.CompanyName &&
-		a.Position == b.Position &&
-		a.Location == b.Location &&
-		payEq(a.Pay, b.Pay) &&
-		a.WorkMode == b.WorkMode &&
-		sameDay(a.ApplicationDate, b.ApplicationDate) &&
-		a.Status == b.Status &&
-		a.Rank == b.Rank &&
-		a.Referral == b.Referral &&
-		a.Notes == b.Notes &&
-		a.JobPostingLink == b.JobPostingLink &&
-		a.CompanyWebsiteLink == b.CompanyWebsiteLink
+func (application JobApplication) Equal(other JobApplication) bool {
+	return application.CompanyName == other.CompanyName &&
+		application.Position == other.Position &&
+		application.Location == other.Location &&
+		payEq(application.Pay, other.Pay) &&
+		application.WorkMode == other.WorkMode &&
+		sameDay(application.ApplicationDate, other.ApplicationDate) &&
+		application.Status == other.Status &&
+		application.Rank == other.Rank &&
+		application.Referral == other.Referral &&
+		application.Notes == other.Notes &&
+		application.JobPostingLink == other.JobPostingLink &&
+		application.CompanyWebsiteLink == other.CompanyWebsiteLink
 }
 
 // JobApplicationPatch uses nil for unchanged fields. Pay points to nil to clear pay.
@@ -145,41 +147,41 @@ type JobApplicationPatch struct {
 	CompanyWebsiteLink *string
 }
 
-func (a *JobApplication) Apply(p JobApplicationPatch) {
-	if p.CompanyName != nil {
-		a.CompanyName = *p.CompanyName
+func (application *JobApplication) Apply(patch JobApplicationPatch) {
+	if patch.CompanyName != nil {
+		application.CompanyName = *patch.CompanyName
 	}
-	if p.Position != nil {
-		a.Position = *p.Position
+	if patch.Position != nil {
+		application.Position = *patch.Position
 	}
-	if p.Location != nil {
-		a.Location = *p.Location
+	if patch.Location != nil {
+		application.Location = *patch.Location
 	}
-	if p.Pay != nil {
-		a.Pay = *p.Pay
+	if patch.Pay != nil {
+		application.Pay = *patch.Pay
 	}
-	if p.WorkMode != nil {
-		a.WorkMode = *p.WorkMode
+	if patch.WorkMode != nil {
+		application.WorkMode = *patch.WorkMode
 	}
-	if p.ApplicationDate != nil {
-		a.ApplicationDate = *p.ApplicationDate
+	if patch.ApplicationDate != nil {
+		application.ApplicationDate = *patch.ApplicationDate
 	}
-	if p.Status != nil {
-		a.Status = *p.Status
+	if patch.Status != nil {
+		application.Status = *patch.Status
 	}
-	if p.Rank != nil {
-		a.Rank = *p.Rank
+	if patch.Rank != nil {
+		application.Rank = *patch.Rank
 	}
-	if p.Referral != nil {
-		a.Referral = *p.Referral
+	if patch.Referral != nil {
+		application.Referral = *patch.Referral
 	}
-	if p.Notes != nil {
-		a.Notes = *p.Notes
+	if patch.Notes != nil {
+		application.Notes = *patch.Notes
 	}
-	if p.JobPostingLink != nil {
-		a.JobPostingLink = *p.JobPostingLink
+	if patch.JobPostingLink != nil {
+		application.JobPostingLink = *patch.JobPostingLink
 	}
-	if p.CompanyWebsiteLink != nil {
-		a.CompanyWebsiteLink = *p.CompanyWebsiteLink
+	if patch.CompanyWebsiteLink != nil {
+		application.CompanyWebsiteLink = *patch.CompanyWebsiteLink
 	}
 }
