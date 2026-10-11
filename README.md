@@ -150,3 +150,24 @@ move between fields, Backspace deletes, Ctrl+S saves, and Esc cancels. The
 form defaults to submitted status and today's UTC date. The saved row is
 selected, and errors keep the input available for correction. Remaining fields
 and richer editing are planned for the full form in section 6.
+
+## Sorting and filtering
+
+Press s, choose with j/k or arrows, then Enter to apply. Esc cancels.
+Sort by added order, company, position, location, or ranking in either
+direction. Text sorts ignore case and surrounding whitespace. Empty values
+and unranked applications stay last in both directions; ties use ascending
+database ID. The default is oldest added first.
+
+Press / to filter. Search is a case-insensitive substring across company,
+position, location, and notes. Tab/Shift+Tab cycle the status constraint;
+text and status must both match. Enter applies, Esc cancels the draft, and
+Ctrl+U clears the draft text. From the list, Esc clears all active filters.
+The toolbar shows the active sort and filter, and the header shows matching
+and total counts.
+
+Sorting and filtering only change the view. Selection follows the same
+application ID when it remains visible; otherwise it resets to the first
+match. Details and the add form retain these settings. A new matching
+application becomes selected; if filters hide it, a saved confirmation explains
+how to clear the filters. No-matches results have a separate empty state.
