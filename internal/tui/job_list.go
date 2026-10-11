@@ -135,32 +135,6 @@ func (jl *JobList) selected() *model.StoredJobApplication {
 	}
 	return &jl.jobs[jl.visible[i]]
 }
-func (jl *JobList) setDetails() {
-	stored := jl.selected()
-	if stored == nil {
-		return
-	}
-	j := stored.JobApplication
-	referral := "No"
-	if j.Referral {
-		referral = "Yes"
-	}
-	pairs := [][2]string{{"Company", j.CompanyName}, {"Position", j.Position}, {"Location", j.Location}, {"Ranking", ranking(j.Rank)}, {"Status", string(j.Status)}, {"Applied", j.ApplicationDate.UTC().Format("02 Jan 2006")}, {"Work mode", string(j.WorkMode)}, {"Pay", j.Pay.String()}, {"Referral", referral}, {"Notes", j.Notes}, {"Job posting", j.JobPostingLink}, {"Company website", j.CompanyWebsiteLink}, {"Record ID", strconv.FormatInt(stored.ID, 10)}}
-	var parts []string
-	for _, p := range pairs {
-		value := optional(p[1])
-		// Preserve paragraph breaks in long notes while stripping terminal controls.
-		if p[0] == "Notes" && p[1] != "" {
-			var lines []string
-			for _, line := range strings.Split(p[1], "\n") {
-				lines = append(lines, plain(line))
-			}
-			value = strings.Join(lines, "\n")
-		}
-		parts = append(parts, label.Render(p[0])+"\n"+ansi.Hardwrap(value, jl.details.Width, true))
-	}
-	jl.details.SetContent(strings.Join(parts, "\n\n"))
-}
 
 func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
