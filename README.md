@@ -62,7 +62,7 @@ The schema stores pay in separate nullable min/max/currency columns.
 
 These are the intended bindings across screens. The list, scrollable details,
 and a complete add form are implemented, along with sorting and text/status
-filtering. Editing existing applications remains planned.
+filtering. Existing applications can be edited and deleted.
 
 | Action | Keys | Screen / behavior |
 | --- | --- | --- |
@@ -74,6 +74,9 @@ filtering. Editing existing applications remains planned.
 | Clear filter | Esc | List with an active filter |
 | Details | Enter | Open selected application |
 | Add | a | Open the full application form from the list |
+| Edit | e | Edit the selected application from list or details |
+| Update status | u | Open editing directly on the status selector |
+| Delete | d | Show confirmation; Enter deletes, Esc cancels |
 | Next / previous field | Tab / Shift+Tab | Forms |
 | Submit form | Ctrl+S | Save; Enter stays available for fields |
 | Cancel / back | Esc | Discard form input, close a menu, or return to the list |
@@ -148,14 +151,20 @@ mode, minimum and maximum pay, currency, notes, and both links.
 
 Company and position are required and trimmed. The date defaults to today in
 UTC and must be a valid YYYY-MM-DD date. Status defaults to submitted; referral
-defaults to no. Use Left/Right to cycle status, referral, and work mode, or
-Ctrl+U to clear and type a value. Work mode defaults to unspecified.
+defaults to no. Use Left/Right to cycle status, referral, and work mode. These
+are controlled selectors: typing, pasting, and character deletion cannot create
+invalid values. Ctrl+U resets a selector to its default. Work mode defaults to
+unspecified.
 
 Ranking is blank or 0 for unranked, otherwise 1–5. Pay amounts are optional,
 nonnegative whole numbers without commas, and maximum must be at least minimum
 when both are supplied. A blank amount stays absent; an explicit 0 is retained.
+Invalid ranking and pay characters are rejected while typing or pasting.
+Complete invalid dates are also rejected; partial dates remain editable.
 Currency is optional and accepts three letters, normalized to uppercase. Pay
-can contain just one amount or currency alone. Notes and links are optional.
+can contain just one amount or currency alone. Notes and links are optional;
+nonempty links must be complete HTTP or HTTPS URLs. Required text, completed
+dates, currency length, and the pay range are validated again before saving.
 
 Tab/Shift+Tab move between fields; Enter moves to the next field except in
 notes, where it inserts a newline. Left/Right move the text cursor in other
