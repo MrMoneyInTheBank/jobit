@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -126,6 +127,15 @@ func applicationFromFields(fields [fieldCount]string) (model.JobApplication, int
 			}
 		}
 		pay.Currency = &currency
+	}
+	for _, i := range []int{postingField, websiteField} {
+		if f[i] == "" {
+			continue
+		}
+		u, err := url.ParseRequestURI(f[i])
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
+			return fail(i, "Use a full http:// or https:// URL")
+		}
 	}
 	app := model.JobApplication{CompanyName: f[companyField], Position: f[positionField], Location: f[locationField], Rank: model.Ranking(rank), ApplicationDate: date, Status: model.Status(status), Referral: referral == "yes", WorkMode: model.WorkMode(mode), Notes: f[notesField], JobPostingLink: f[postingField], CompanyWebsiteLink: f[websiteField]}
 	if pay.Min != nil || pay.Max != nil || pay.Currency != nil {
