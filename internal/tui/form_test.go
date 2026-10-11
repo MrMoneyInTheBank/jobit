@@ -29,6 +29,7 @@ func TestFormValidation(t *testing.T) {
 		{"invalid date", dateField, "2026-02-30"}, {"date format", dateField, "11/10/2026"},
 		{"missing date", dateField, ""}, {"status", statusField, "pending"}, {"referral", referralField, "maybe"},
 		{"work mode", modeField, "office"}, {"rank missing", rankField, ""}, {"rank zero", rankField, "0"}, {"rank negative", rankField, "-1"}, {"rank high", rankField, "6"},
+		{"rank wraps positive", rankField, "257"}, {"rank wraps negative", rankField, "-255"},
 		{"rank fractional", rankField, "2.5"}, {"pay negative", minField, "-1"}, {"pay fractional", maxField, "1.5"},
 		{"pay comma", minField, "1,000"}, {"pay overflow", maxField, strings.Repeat("9", 100)},
 		{"currency length", currencyField, "US"}, {"currency characters", currencyField, "1$!"},

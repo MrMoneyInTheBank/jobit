@@ -93,7 +93,7 @@ func applicationFromFields(fields [fieldCount]string) (model.JobApplication, int
 		return fail(modeField, "Work mode must be remote, hybrid, onsite, or blank")
 	}
 	rank, err := strconv.Atoi(values[rankField])
-	if err != nil || !model.Ranking(rank).Valid() {
+	if err != nil || rank < int(model.RankOne) || rank > int(model.RankFive) {
 		return fail(rankField, "Ranking must be 1–5")
 	}
 	var pay model.Pay
