@@ -1,7 +1,10 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"log"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -11,6 +14,13 @@ import (
 )
 
 func main() {
+	if err := parseArgs(os.Args[1:], os.Stdout); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return
+		}
+		log.Print(err)
+		os.Exit(2)
+	}
 
 	db, err := store.OpenDB(nil)
 	if err != nil {
