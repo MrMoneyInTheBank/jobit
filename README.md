@@ -210,3 +210,19 @@ paragraph breaks; URLs wrap without dropping characters. Use g/Home and G/End
 to jump to the top or bottom. Resizing preserves the relative reading position;
 opening another details view starts at the top. Esc restores the selected
 application and the active list sort and filters.
+
+
+## Editing and deletion
+
+From the list or details, e opens all application fields prefilled for editing.
+Use u to jump directly to the status selector, change it with Left/Right, then
+Ctrl+S to save. Editing retains the database ID. Ctrl+U clears an optional text
+or pay field; clearing both amounts and currency removes pay information.
+Required fields cannot be saved empty. Esc discards the draft and returns to
+the screen where editing began.
+
+Press d to request deletion. The confirmation identifies the company and
+position; Enter permanently deletes the record, while Esc cancels. Failed
+updates retain the draft, and failed deletions retain the record and allow a
+retry. Sort and filter settings survive both operations; an updated record
+hidden by the active filter is reported in the list's status line.
