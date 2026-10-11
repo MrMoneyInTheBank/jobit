@@ -185,6 +185,16 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			jl.screen = listScreen
 			return jl, nil
 		}
+		if jl.screen == detailsScreen {
+			switch key {
+			case "g", "home":
+				jl.details.GotoTop()
+				return jl, nil
+			case "G", "end":
+				jl.details.GotoBottom()
+				return jl, nil
+			}
+		}
 		if jl.screen == listScreen {
 			if key == "s" {
 				jl.control = sortControl
@@ -349,7 +359,7 @@ func (jl *JobList) View() string {
 		subtitle = plain(jl.selected().JobApplication.CompanyName) + " · " + plain(jl.selected().JobApplication.Position)
 		toolbar = fmt.Sprintf("DETAILS  ·  %.0f%% scrolled", jl.details.ScrollPercent()*100)
 		body = jl.details.View()
-		help = "↑↓ j/k scroll   esc back   q quit"
+		help = "j/k scroll   g/G top/end   esc back   q quit"
 	}
 	if jl.screen == addScreen {
 		title = "New application"
