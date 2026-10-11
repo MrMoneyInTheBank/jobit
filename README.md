@@ -17,7 +17,7 @@ The goal is to replace spreadsheets or Notion with a tool that lives entirely in
 ## Core Ideas
 
 - Local-first: data is stored locally
-- Schema-driven: you define the fields you care about
+- Fixed application fields with optional pay, notes, and links
 - Terminal-native: no mouse, no browser, no GUI
 - Opinionated simplicity over feature bloat
 
@@ -87,6 +87,9 @@ path. To adopt the new default, close all Jobit instances, back up the old file,
 create the directory shown by `jobit --help`, and copy the database there.
 Do not overwrite an existing destination database. If SQLite sidecar files
 remain, use a SQLite backup procedure rather than copying a live database.
+Databases using the original, unversioned schema are rejected without changing
+their records. Back them up, then remove the old database to start fresh. Existing
+version-1 databases are upgraded in place to correct a column name.
 
 ## Run and develop
 
@@ -115,8 +118,7 @@ The startup path is: cmd/jobit opens and initializes SQLite, reads applications
 into model types, constructs table rows, and starts Bubble Tea.
 cmd/seed uses the same database selection and schema, then inserts sample rows.
 The schema stores pay in separate nullable min/max/currency columns.
-On first launch with the revised schema, Jobit discards rows from an older
-database schema. Back up an old database first if you need its data.
+Schema initialization never deletes existing application rows.
 
 ## Keyboard contract
 
@@ -159,9 +161,9 @@ sh scripts/check.sh all   # task check: runs all three, reports failure if any f
 gofmt -w ./cmd ./internal # task fmt: apply formatting
 ```
 
-All checks share scripts/check.sh. GitHub Actions runs its `all` mode on every
-push and pull request, using go.mod for Go setup, CGO_ENABLED=1, and
-build-essential for the C compiler.
+All checks share scripts/check.sh. GitHub Actions runs its `all` mode, builds
+both commands, and runs race tests on macOS and Linux for every push and pull
+request. It uses go.mod for Go setup, CGO_ENABLED=1, and build-essential on Linux.
 
 Enable the versioned local hook after each fresh clone:
 

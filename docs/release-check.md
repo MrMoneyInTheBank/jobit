@@ -1,4 +1,14 @@
-# Release verification — 11 October 2026
+# Release verification — 12 October 2026
+
+## Current local checks
+
+- `scripts/check.sh all`, `go build ./cmd/jobit ./cmd/seed`, and
+  `go test -race ./...` pass on macOS with `GOCACHE=/tmp/jobit-go-cache`.
+- Regression tests cover rejection without data loss for unversioned databases,
+  preservation of records during the version-1 column rename, and CSV export
+  against a legacy database.
+- GitHub Actions now checks macOS and Linux. The updated workflow needs a run
+  on the release commit before release verification is complete.
 
 ## Passed locally
 
@@ -30,6 +40,6 @@ Native Linux release binaries were not exercised.
 GitHub Actions passed for commit 00420a14cfcfbfafe2760540232f65f1711e9bab:
 https://github.com/MrMoneyInTheBank/jobit/actions/runs/38132425136
 
-That run predates the latest local database-location and release changes.
+That run predates the current database and release changes.
 The final release commit must be published and pass the configured workflow
 before section 7 can be marked fully complete. This audit did not push commits.

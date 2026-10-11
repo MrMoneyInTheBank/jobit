@@ -9,7 +9,10 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     env:
       CGO_ENABLED: "1"
     steps:
@@ -19,8 +22,13 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Install C compiler for SQLite
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y build-essential
       - name: Download Go modules
         run: go mod download
       - name: Formatting, lint, and tests
         run: sh scripts/check.sh all
+      - name: Build commands
+        run: go build ./cmd/jobit ./cmd/seed
+      - name: Race tests
+        run: go test -race ./...
