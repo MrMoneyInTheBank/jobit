@@ -29,6 +29,6 @@ jobs:
       - name: Formatting, lint, and tests
         run: sh scripts/check.sh all
       - name: Build commands
-        run: go build ./cmd/jobit ./cmd/seed
+        run: go build ./cmd/jobit
       - name: Race tests
         run: go test -race ./...

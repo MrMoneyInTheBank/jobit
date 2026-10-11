@@ -2,11 +2,9 @@
 
 ## Current local checks
 
-- `scripts/check.sh all`, `go build ./cmd/jobit ./cmd/seed`, and
+- `scripts/check.sh all`, `go build ./cmd/jobit`, and
   `go test -race ./...` pass on macOS with `GOCACHE=/tmp/jobit-go-cache`.
-- Regression tests cover rejection without data loss for unversioned databases,
-  preservation of records during the version-1 column rename, and CSV export
-  against a legacy database.
+- Regression tests cover schema rejection without data loss and read-only CSV export.
 - GitHub Actions now checks macOS and Linux. The updated workflow needs a run
   on the release commit before release verification is complete.
 
@@ -27,8 +25,7 @@
 - Terminal dimensions changed while list, form, sort, filter, details, and
   deletion confirmation were open (including 30 columns by 12 lines).
 - Normal launch works without seed data.
-- Development and seeding now default to ./dev.db. Production retains the
-  per-user database. JOBIT_DB_DSN remains an explicit override.
+- Interactive use and CSV export use the fixed per-user database.
 - Git ignores databases, SQLite WAL/SHM/journal sidecars, logs, and bin/.
 
 Environment: macOS, Go 1.25.6, CGO enabled, Apple Command Line Tools.

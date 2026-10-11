@@ -4,22 +4,14 @@ env:
   CGO_ENABLED: "1"
 
 tasks:
-  run-dev:
-    desc: Run with ./dev.db (or JOBIT_DB_DSN)
-    cmds:
-      - JOBIT_DB_DSN="${JOBIT_DB_DSN:-./dev.db}" go run ./cmd/jobit
-  run-prod:
-    desc: Build and run jobit (JOBIT_DB_DSN overrides the user data path)
+  run:
+    desc: Build and run jobit
     cmds:
       - task: build
       - ./bin/jobit
   build:
     cmds:
       - go build -o bin/jobit ./cmd/jobit
-  seed:
-    desc: Add 50 sample applications to JOBIT_DB_DSN or ./dev.db
-    cmds:
-      - go run ./cmd/seed
   fmt:
     cmds:
       - gofmt -w ./cmd ./internal

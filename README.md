@@ -68,28 +68,12 @@ Jobit uses one persistent database per user, independent of where it is launched
 | macOS | `~/Library/Application Support/jobit/jobit.db` |
 | Linux | `$XDG_DATA_HOME/jobit/jobit.db`, or `~/.local/share/jobit/jobit.db` when XDG_DATA_HOME is absent or relative |
 
-Run `jobit --help` (or `jobit -h`) to see the resolved default and effective
-database locations. Help does not create directories or open the database.
-Normal startup creates the default directory and database, then initializes
-the embedded schema. Reinstalling the executable does not remove your data.
-
-`JOBIT_DB_DSN` overrides the default with a SQLite path or DSN. Relative
-overrides are relative to your working directory; custom parent directories
-must already exist. For example:
-
-```sh
-JOBIT_DB_DSN="$HOME/my-applications.db" jobit
-```
-
-Earlier development builds used `./jobit.db`. Existing files are not moved or
-merged automatically. To continue using one, set JOBIT_DB_DSN to its absolute
-path. To adopt the new default, close all Jobit instances, back up the old file,
-create the directory shown by `jobit --help`, and copy the database there.
-Do not overwrite an existing destination database. If SQLite sidecar files
-remain, use a SQLite backup procedure rather than copying a live database.
-Databases using the original, unversioned schema are rejected without changing
-their records. Back them up, then remove the old database to start fresh. Existing
-version-1 databases are upgraded in place to correct a column name.
+Run `jobit --help` (or `jobit -h`) to see the resolved database location.
+Help does not create directories or open the database. Normal startup creates
+that directory and applies the current embedded schema. Reinstalling the
+executable does not remove your data. Jobit does not accept a custom database
+path. Databases with an older schema are rejected without changing their rows;
+back up and remove the old file if you want to start fresh.
 
 ## Run and develop
 
@@ -102,21 +86,12 @@ From the repository root:
 CGO_ENABLED=1 go run ./cmd/jobit
 ```
 
-Direct launches and production use the per-user location described above.
-The development task defaults to ./dev.db to isolate sample data.
-Use `JOBIT_DB_DSN=./dev.db CGO_ENABLED=1 go run ./cmd/jobit` for a separate
-development file. An explicit nonempty DSN passed to store.OpenDB takes
-precedence over the environment. Tests use isolated temporary databases.
-
-With Task v3 installed, `task run-dev` runs with ./dev.db (unless JOBIT_DB_DSN is set), and
-`task run-prod` builds `bin/jobit` and runs it with the same database rules.
-`task seed` (or `CGO_ENABLED=1 go run ./cmd/seed`) appends 50 sample applications
-to ./dev.db by default. JOBIT_DB_DSN explicitly overrides both development and
-seed commands; setting it to your personal database will modify that database.
+Direct launches use the per-user location described above. Tests use isolated
+temporary databases. With Task v3 installed, `task run` builds and launches
+Jobit; `task check` runs local checks.
 
 The startup path is: cmd/jobit opens and initializes SQLite, reads applications
 into model types, constructs table rows, and starts Bubble Tea.
-cmd/seed uses the same database selection and schema, then inserts sample rows.
 The schema stores pay in separate nullable min/max/currency columns.
 Schema initialization never deletes existing application rows.
 
@@ -297,14 +272,13 @@ hidden by the active filter is reported in the list's status line.
 - `jobit --version` prints the installed module version, or development revision.
   Release builds can set a version with `go build -ldflags "-X main.version=v1.0.0" ./cmd/jobit`.
 - `jobit --export-csv applications.csv` exports every record and field from the
-  selected database. The output file must not already exist.
+  per-user database. The output file must not already exist. Export opens the source read-only.
 - `jobit --export-csv -` writes CSV to standard output. Exports include raw text,
   multiline notes, separate pay columns, and database IDs; filters do not apply.
   Empty optional pay fields remain empty and explicit zero amounts remain zero.
 - `jobit --help` lists options and database locations.
 
-Only one interactive Jobit instance may run per user data directory, even when
-JOBIT_DB_DSN selects another database. A second launch directs you to the
+Only one interactive Jobit instance may run per user data directory. A second launch directs you to the
 existing terminal tab/window; attaching to another terminal is not supported.
 The operating system releases the instance lock on exit or crash. The lock file
 can remain on disk and does not need deleting. Help, version, and CSV export
