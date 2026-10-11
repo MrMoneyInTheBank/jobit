@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/MrMoneyInTheBank/jobit/internal/model"
 	store "github.com/MrMoneyInTheBank/jobit/internal/store"
 	"github.com/MrMoneyInTheBank/jobit/internal/tui"
 )
@@ -25,7 +26,10 @@ func main() {
 		log.Fatalf("Could not get job applications: %v", err)
 	}
 
-	job_list := tui.InitJobList(job_apps)
+	job_list := tui.InitJobList(job_apps, func(app model.JobApplication) (model.StoredJobApplication, error) {
+		id, err := store.AddJobApplication(db, app)
+		return model.StoredJobApplication{ID: id, JobApplication: app}, err
+	})
 	if _, err := tea.NewProgram(&job_list, tea.WithAltScreen()).Run(); err != nil {
 		log.Fatalf("Could not run TUI: %v", err)
 	}
