@@ -35,6 +35,7 @@ func TestInstanceLock(t *testing.T) {
 	}
 	third.Close()
 }
+
 func TestCSVExport(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "data.db")
 	t.Setenv("JOBIT_DB_DSN", path)
@@ -78,6 +79,7 @@ func TestCSVExport(t *testing.T) {
 		t.Fatal("database overwritten")
 	}
 }
+
 func TestVersionAndExportFlags(t *testing.T) {
 	var out bytes.Buffer
 	for _, args := range [][]string{{"--version"}, {"--export-csv", "-"}, {"--export-csv", "applications.csv"}} {

@@ -14,11 +14,11 @@ type options struct {
 }
 
 func parseOptions(args []string, output io.Writer) (options, error) {
-	var opts options
+	var parsed options
 	flags := flag.NewFlagSet("jobit", flag.ContinueOnError)
 	flags.SetOutput(output)
-	flags.BoolVar(&opts.version, "version", false, "Print version and exit")
-	flags.StringVar(&opts.exportCSV, "export-csv", "", "Export all applications to a new CSV file, or - for stdout")
+	flags.BoolVar(&parsed.version, "version", false, "Print version and exit")
+	flags.StringVar(&parsed.exportCSV, "export-csv", "", "Export all applications to a new CSV file, or - for stdout")
 	flags.Usage = func() {
 		fmt.Fprintln(output, "Jobit — local job application tracker\n\nUsage: jobit [--help] [--version] [--export-csv FILE]\n\n  -h, --help  Show this help without opening the database.")
 		flags.PrintDefaults()
@@ -28,24 +28,28 @@ func parseOptions(args []string, output io.Writer) (options, error) {
 		} else {
 			fmt.Fprintf(output, "\nDefault database: %s\n", path)
 		}
-		effective, err := store.DatabaseDSN(nil)
+		effectivePath, err := store.DatabaseDSN(nil)
 		if err != nil {
 			fmt.Fprintf(output, "Effective database: unavailable (%v)\n", err)
 		} else {
-			fmt.Fprintf(output, "Effective database: %s\n", effective)
+			fmt.Fprintf(output, "Effective database: %s\n", effectivePath)
 		}
 		fmt.Fprintln(output, "\nOverride with JOBIT_DB_DSN (a SQLite path or DSN).\nRelative overrides resolve from the working directory.\nThe default data directory and database are created on first launch.\nNo repository or SQLite server is required.")
 	}
+
 	if err := flags.Parse(args); err != nil {
-		return opts, err
+		return parsed, err
 	}
 	if flags.NArg() != 0 {
-		return opts, fmt.Errorf("unexpected argument %q; use jobit --help", flags.Arg(0))
+		return parsed, fmt.Errorf("unexpected argument %q; use jobit --help", flags.Arg(0))
 	}
-	if opts.version && opts.exportCSV != "" {
-		return opts, fmt.Errorf("--version and --export-csv cannot be combined")
+	if parsed.version && parsed.exportCSV != "" {
+		return parsed, fmt.Errorf("--version and --export-csv cannot be combined")
 	}
-	return opts, nil
+	return parsed, nil
 }
 
-func parseArgs(args []string, out io.Writer) error { _, err := parseOptions(args, out); return err }
+func parseArgs(args []string, output io.Writer) error {
+	_, err := parseOptions(args, output)
+	return err
+}

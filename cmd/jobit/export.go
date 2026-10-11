@@ -21,65 +21,78 @@ func versionString() string {
 		if info.Main.Version != "" && info.Main.Version != "(devel)" {
 			return "jobit " + info.Main.Version
 		}
-		for _, s := range info.Settings {
-			if s.Key == "vcs.revision" {
-				return "jobit dev (" + s.Value + ")"
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return "jobit dev (" + setting.Value + ")"
 			}
 		}
 	}
 	return "jobit dev"
 }
+
 func exportCSV(path string, stdout io.Writer) (err error) {
-	db, err := store.OpenDB(nil)
+	database, err := store.OpenDB(nil)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	if err = store.InitDB(db); err != nil {
+	defer database.Close()
+
+	if err = store.InitDB(database); err != nil {
 		return err
 	}
-	apps, err := store.GetJobApplications(db)
+	applications, err := store.GetJobApplications(database)
 	if err != nil {
 		return err
 	}
-	var out io.Writer = stdout
+
+	var output io.Writer = stdout
 	if path != "-" {
-		f, e := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-		if e != nil {
-			return fmt.Errorf("create export (existing files are not overwritten): %w", e)
+		exportFile, openErr := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if openErr != nil {
+			return fmt.Errorf("create export (existing files are not overwritten): %w", openErr)
 		}
-		out = f
+		output = exportFile
 		defer func() {
-			if e := f.Close(); err == nil {
-				err = e
+			if closeErr := exportFile.Close(); err == nil {
+				err = closeErr
 			}
 			if err != nil {
 				os.Remove(path)
 			}
 		}()
 	}
-	writer := csv.NewWriter(out)
+
+	writer := csv.NewWriter(output)
 	if err = writer.Write([]string{"id", "company", "position", "location", "ranking", "application_date", "status", "referral", "work_mode", "pay_min", "pay_max", "currency", "notes", "job_posting_link", "company_website_link"}); err != nil {
 		return err
 	}
-	for _, stored := range apps {
-		a := stored.JobApplication
+	for _, stored := range applications {
+		application := stored.JobApplication
 		minimum, maximum, currency := "", "", ""
-		if a.Pay != nil {
-			if a.Pay.Min != nil {
-				minimum = strconv.Itoa(*a.Pay.Min)
+		if application.Pay != nil {
+			if application.Pay.Min != nil {
+				minimum = strconv.Itoa(*application.Pay.Min)
 			}
-			if a.Pay.Max != nil {
-				maximum = strconv.Itoa(*a.Pay.Max)
+			if application.Pay.Max != nil {
+				maximum = strconv.Itoa(*application.Pay.Max)
 			}
-			if a.Pay.Currency != nil {
-				currency = *a.Pay.Currency
+			if application.Pay.Currency != nil {
+				currency = *application.Pay.Currency
 			}
 		}
-		if err = writer.Write([]string{strconv.FormatInt(stored.ID, 10), a.CompanyName, a.Position, a.Location, strconv.Itoa(int(a.Rank)), a.ApplicationDate.UTC().Format("2006-01-02"), string(a.Status), strconv.FormatBool(a.Referral), string(a.WorkMode), minimum, maximum, currency, a.Notes, a.JobPostingLink, a.CompanyWebsiteLink}); err != nil {
+		record := []string{
+			strconv.FormatInt(stored.ID, 10), application.CompanyName, application.Position,
+			application.Location, strconv.Itoa(int(application.Rank)),
+			application.ApplicationDate.UTC().Format("2006-01-02"), string(application.Status),
+			strconv.FormatBool(application.Referral), string(application.WorkMode),
+			minimum, maximum, currency, application.Notes,
+			application.JobPostingLink, application.CompanyWebsiteLink,
+		}
+		if err = writer.Write(record); err != nil {
 			return err
 		}
 	}
+
 	writer.Flush()
 	return writer.Error()
 }

@@ -12,7 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
-	store "github.com/MrMoneyInTheBank/jobit/internal/store"
+	"github.com/MrMoneyInTheBank/jobit/internal/store"
 	"github.com/MrMoneyInTheBank/jobit/internal/tui"
 )
 
@@ -24,49 +24,50 @@ func main() {
 }
 
 func run() error {
-	opts, err := parseOptions(os.Args[1:], os.Stdout)
+	parsedOptions, err := parseOptions(os.Args[1:], os.Stdout)
 	if errors.Is(err, flag.ErrHelp) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	if opts.version {
+	if parsedOptions.version {
 		fmt.Fprintln(os.Stdout, versionString())
 		return nil
 	}
-	if opts.exportCSV != "" {
-		return exportCSV(opts.exportCSV, os.Stdout)
+	if parsedOptions.exportCSV != "" {
+		return exportCSV(parsedOptions.exportCSV, os.Stdout)
 	}
-	lock, err := acquireInstance()
+
+	instanceLock, err := acquireInstance()
 	if err != nil {
 		return err
 	}
-	defer lock.Close()
+	defer instanceLock.Close()
 
-	db, err := store.OpenDB(nil)
+	database, err := store.OpenDB(nil)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
-	defer store.CloseDB(db)
-	if err := store.InitDB(db); err != nil {
+	defer store.CloseDB(database)
+	if err := store.InitDB(database); err != nil {
 		return fmt.Errorf("initialize database: %w", err)
 	}
 
-	job_apps, err := store.GetJobApplications(db)
+	applications, err := store.GetJobApplications(database)
 	if err != nil {
 		return fmt.Errorf("load applications: %w", err)
 	}
 
-	job_list := tui.InitJobList(job_apps, func(app model.JobApplication) (model.StoredJobApplication, error) {
-		id, err := store.AddJobApplication(db, app)
-		return model.StoredJobApplication{ID: id, JobApplication: app}, err
+	jobList := tui.InitJobList(applications, func(application model.JobApplication) (model.StoredJobApplication, error) {
+		id, err := store.AddJobApplication(database, application)
+		return model.StoredJobApplication{ID: id, JobApplication: application}, err
 	})
-	job_list.SetMutationHandlers(func(app model.StoredJobApplication) error {
-		return store.PatchJobApplication(db, app, model.JobApplicationPatch{})
-	}, func(id int64) error { return store.DeleteJobApplicationByID(db, id) })
+	jobList.SetMutationHandlers(func(application model.StoredJobApplication) error {
+		return store.PatchJobApplication(database, application, model.JobApplicationPatch{})
+	}, func(id int64) error { return store.DeleteJobApplicationByID(database, id) })
 
-	program := tea.NewProgram(&job_list, tea.WithAltScreen(), tea.WithoutSignalHandler(), tea.WithFilter(tui.ProtectPendingWrite))
+	program := tea.NewProgram(&jobList, tea.WithAltScreen(), tea.WithoutSignalHandler(), tea.WithFilter(tui.ProtectPendingWrite))
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	defer signal.Stop(signals)
