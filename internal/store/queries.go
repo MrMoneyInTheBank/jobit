@@ -37,6 +37,7 @@ const getAllQuery string = `
 			job_positing_link,
 			company_website_link
 		FROM job_applications
+ ORDER BY id ASC
 	`
 
 const getByIDQuery string = `
