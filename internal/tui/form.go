@@ -174,7 +174,13 @@ func (jl *JobList) insertText(text string) {
 	r := []rune(jl.fields[jl.field])
 	jl.cursor = min(jl.cursor, len(r))
 	input := []rune(text)
-	jl.fields[jl.field] = string(r[:jl.cursor]) + string(input) + string(r[jl.cursor:])
+	candidate := string(r[:jl.cursor]) + string(input) + string(r[jl.cursor:])
+	if !validTypedValue(jl.field, candidate) {
+		jl.formError = "Input rejected · " + formFields[jl.field].hint
+		return
+	}
+	jl.fields[jl.field] = candidate
+	jl.formError = ""
 	jl.cursor += len(input)
 }
 func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
@@ -212,6 +218,7 @@ func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
 			}
 			jl.fields[jl.field] = choices[(current+delta+len(choices))%len(choices)]
 			jl.cursor = len([]rune(jl.fields[jl.field]))
+			jl.formError = ""
 		} else {
 			jl.cursor = max(0, min(len(r), jl.cursor+delta))
 		}
@@ -220,14 +227,25 @@ func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
 	case "end", "ctrl+e":
 		jl.cursor = len(r)
 	case "ctrl+u":
-		jl.fields[jl.field] = ""
-		jl.cursor = 0
+		if choices := formFields[jl.field].choices; len(choices) > 0 {
+			jl.fields[jl.field] = choices[0]
+			jl.cursor = len([]rune(choices[0]))
+		} else {
+			jl.fields[jl.field] = ""
+			jl.cursor = 0
+		}
 	case "backspace", "ctrl+h":
+		if len(formFields[jl.field].choices) > 0 {
+			return nil
+		}
 		if jl.cursor > 0 {
 			jl.fields[jl.field] = string(r[:jl.cursor-1]) + string(r[jl.cursor:])
 			jl.cursor--
 		}
 	case "delete":
+		if len(formFields[jl.field].choices) > 0 {
+			return nil
+		}
 		if jl.cursor < len(r) {
 			jl.fields[jl.field] = string(r[:jl.cursor]) + string(r[jl.cursor+1:])
 		}
@@ -280,6 +298,13 @@ func (jl *JobList) formView() string {
 		} else if value == "" {
 			value = "—"
 		}
+		if len(f.choices) > 0 {
+			value = jl.fields[i]
+			if value == "" {
+				value = "Unspecified"
+			}
+			value = "‹ " + value + " ›"
+		}
 		wrapped := ansi.Hardwrap(strings.ReplaceAll(value, "\t", "    "), max(1, w-2), true)
 		for _, line := range strings.Split(wrapped, "\n") {
 			lines = append(lines, "  "+line)
@@ -289,4 +314,61 @@ func (jl *JobList) formView() string {
 	start := max(0, active-h/2)
 	start = min(start, max(0, len(lines)-h))
 	return strings.Join(lines[start:min(len(lines), start+h)], "\n")
+}
+
+// Partial dates and currency codes may be incomplete while editing; saving
+// still validates the complete value and cross-field constraints.
+func validTypedValue(field int, value string) bool {
+	if len(formFields[field].choices) > 0 {
+		return false
+	}
+	switch field {
+	case rankField:
+		return value == "" || (len(value) == 1 && value[0] >= '0' && value[0] <= '5')
+	case minField, maxField:
+		if value == "" {
+			return true
+		}
+		for _, r := range value {
+			if r < '0' || r > '9' {
+				return false
+			}
+		}
+		_, err := strconv.Atoi(value)
+		return err == nil
+	case dateField:
+		if len(value) > 10 {
+			return false
+		}
+		for i, r := range value {
+			if i == 4 || i == 7 {
+				if r != '-' {
+					return false
+				}
+			} else if r < '0' || r > '9' {
+				return false
+			}
+		}
+		if len(value) >= 7 {
+			month, _ := strconv.Atoi(value[5:7])
+			if month < 1 || month > 12 {
+				return false
+			}
+		}
+		if len(value) == 10 {
+			date, err := time.Parse("2006-01-02", value)
+			return err == nil && !date.IsZero()
+		}
+		return true
+	case currencyField:
+		if len(value) > 3 {
+			return false
+		}
+		for _, r := range value {
+			if !(r >= 'a' && r <= 'z') && !(r >= 'A' && r <= 'Z') {
+				return false
+			}
+		}
+	}
+	return true
 }

@@ -132,7 +132,7 @@ func TestFormKeyboardAndSmallScreens(t *testing.T) {
 			if lipgloss.Width(view) > size[0] || lipgloss.Height(view) > size[1] {
 				t.Fatalf("overflow %v field %d", size, i)
 			}
-			if !strings.Contains(view, "▏") {
+			if !strings.Contains(view, "▏") && !strings.Contains(view, "‹") {
 				t.Fatalf("cursor hidden %v field %d", size, i)
 			}
 		}
@@ -169,7 +169,11 @@ func TestFullFormPersistence(t *testing.T) {
 			t.Fatalf("unexpected focus %d", j.field)
 		}
 		j.Update(tea.KeyMsg{Type: tea.KeyCtrlU})
-		if i == notesField {
+		if len(formFields[i].choices) > 0 {
+			for j.fields[i] != value {
+				j.Update(tea.KeyMsg{Type: tea.KeyRight})
+			}
+		} else if i == notesField {
 			key(&j, "Notes")
 			key(&j, "enter")
 			key(&j, "Second line")
