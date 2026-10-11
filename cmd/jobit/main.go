@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,7 +17,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		log.Print(err)
+		fmt.Fprintln(os.Stderr, styledError(err))
 		os.Exit(1)
 	}
 }
@@ -32,10 +31,10 @@ func run() error {
 		return err
 	}
 	if parsedOptions.version {
-		fmt.Fprintln(os.Stdout, versionString())
+		fmt.Fprintln(os.Stdout, styledVersion(versionString()))
 		return nil
 	}
-	if parsedOptions.exportCSV != "" {
+	if parsedOptions.exportRequested {
 		return exportCSV(parsedOptions.exportCSV, os.Stdout)
 	}
 
@@ -45,7 +44,7 @@ func run() error {
 	}
 	defer instanceLock.Close()
 
-	database, err := store.OpenDB(nil)
+	database, err := store.OpenDB()
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}

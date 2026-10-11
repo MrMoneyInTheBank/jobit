@@ -31,13 +31,13 @@ func versionString() string {
 }
 
 func exportCSV(path string, stdout io.Writer) (err error) {
-	database, err := store.OpenDB(nil)
+	database, err := store.OpenReadDB()
 	if err != nil {
 		return err
 	}
 	defer database.Close()
 
-	if err = store.InitDB(database); err != nil {
+	if err = store.CheckSchema(database); err != nil {
 		return err
 	}
 	applications, err := store.GetJobApplications(database)

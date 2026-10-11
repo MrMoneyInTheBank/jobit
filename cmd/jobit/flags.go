@@ -4,46 +4,73 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/store"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type options struct {
-	version   bool
-	exportCSV string
+	version         bool
+	exportRequested bool
+	exportCSV       string
+}
+
+var titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("63"))
+var cardStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("63")).Padding(0, 1)
+
+func styledVersion(value string) string { return cardStyle.Render(titleStyle.Render(value)) }
+func styledError(err error) string {
+	return cardStyle.BorderForeground(lipgloss.Color("196")).Render(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("196")).Render("Error") + "  " + err.Error())
 }
 
 func parseOptions(args []string, output io.Writer) (options, error) {
 	var parsed options
 	flags := flag.NewFlagSet("jobit", flag.ContinueOnError)
-	flags.SetOutput(output)
+	flags.SetOutput(io.Discard)
 	flags.BoolVar(&parsed.version, "version", false, "Print version and exit")
-	flags.StringVar(&parsed.exportCSV, "export-csv", "", "Export all applications to a new CSV file, or - for stdout")
+	flags.StringVar(&parsed.exportCSV, "export-csv", "", "Export to a new CSV file, or - for stdout")
 	flags.Usage = func() {
-		fmt.Fprintln(output, "Jobit — local job application tracker\n\nUsage: jobit [--help] [--version] [--export-csv FILE]\n\n  -h, --help  Show this help without opening the database.")
-		flags.PrintDefaults()
 		path, err := store.DefaultDatabasePath()
 		if err != nil {
-			fmt.Fprintf(output, "\nDefault database: unavailable (%v)\n", err)
-		} else {
-			fmt.Fprintf(output, "\nDefault database: %s\n", path)
+			path = "unavailable (" + err.Error() + ")"
 		}
-		effectivePath, err := store.DatabaseDSN(nil)
-		if err != nil {
-			fmt.Fprintf(output, "Effective database: unavailable (%v)\n", err)
-		} else {
-			fmt.Fprintf(output, "Effective database: %s\n", effectivePath)
-		}
-		fmt.Fprintln(output, "\nOverride with JOBIT_DB_DSN (a SQLite path or DSN).\nRelative overrides resolve from the working directory.\nThe default data directory and database are created on first launch.\nNo repository or SQLite server is required.")
+		body := strings.Join([]string{
+			titleStyle.Render("JOBIT"),
+			"Local job application tracker",
+			"",
+			titleStyle.Render("USAGE"),
+			"  jobit [--help] [--version] [--export-csv FILE]",
+			"",
+			titleStyle.Render("OPTIONS"),
+			"  -h, --help           Show this help",
+			"  --version           Show the installed version",
+			"  --export-csv FILE   Export to a new CSV file; use - for stdout",
+			"",
+			titleStyle.Render("DATA"),
+			"  " + path,
+			"  Created on first interactive launch.",
+		}, "\n")
+		fmt.Fprintln(output, cardStyle.Render(body))
 	}
-
 	if err := flags.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return parsed, err
+		}
 		return parsed, err
 	}
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == "export-csv" {
+			parsed.exportRequested = true
+		}
+	})
 	if flags.NArg() != 0 {
 		return parsed, fmt.Errorf("unexpected argument %q; use jobit --help", flags.Arg(0))
 	}
-	if parsed.version && parsed.exportCSV != "" {
+	if parsed.exportRequested && parsed.exportCSV == "" {
+		return parsed, fmt.Errorf("--export-csv requires a filename (or - for stdout)")
+	}
+	if parsed.version && parsed.exportRequested {
 		return parsed, fmt.Errorf("--version and --export-csv cannot be combined")
 	}
 	return parsed, nil

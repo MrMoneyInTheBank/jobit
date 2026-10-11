@@ -37,9 +37,14 @@ func TestInstanceLock(t *testing.T) {
 }
 
 func TestCSVExport(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "data.db")
-	t.Setenv("JOBIT_DB_DSN", path)
-	db, err := store.OpenDB(nil)
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
+	path, err := store.DefaultDatabasePath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,6 +57,14 @@ func TestCSVExport(t *testing.T) {
 		t.Fatal(err)
 	}
 	db.Close()
+	sourceBefore, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourceInfo, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var out bytes.Buffer
 	if err = exportCSV("-", &out); err != nil {
 		t.Fatal(err)
@@ -78,6 +91,17 @@ func TestCSVExport(t *testing.T) {
 	if err = exportCSV(path, &out); err == nil {
 		t.Fatal("database overwritten")
 	}
+	sourceAfter, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	afterInfo, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(sourceBefore, sourceAfter) || !sourceInfo.ModTime().Equal(afterInfo.ModTime()) {
+		t.Fatal("export modified source database")
+	}
 }
 
 func TestVersionAndExportFlags(t *testing.T) {
@@ -86,6 +110,9 @@ func TestVersionAndExportFlags(t *testing.T) {
 		if _, err := parseOptions(args, &out); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if _, err := parseOptions([]string{"--export-csv="}, &out); err == nil || !strings.Contains(err.Error(), "filename") {
+		t.Fatal("empty export filename accepted")
 	}
 	if _, err := parseOptions([]string{"--version", "--export-csv", "-"}, &out); err == nil {
 		t.Fatal("conflicting flags accepted")
@@ -96,9 +123,10 @@ func TestVersionAndExportFlags(t *testing.T) {
 }
 
 func TestExportDoesNotResetLegacyDatabase(t *testing.T) {
-	databasePath := filepath.Join(t.TempDir(), "legacy.db")
-	t.Setenv("JOBIT_DB_DSN", databasePath)
-	database, err := store.OpenDB(nil)
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
+	database, err := store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +141,7 @@ func TestExportDoesNotResetLegacyDatabase(t *testing.T) {
 	if err := exportCSV("-", &output); err == nil {
 		t.Fatal("export silently reset a legacy database")
 	}
-	database, err = store.OpenDB(nil)
+	database, err = store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,5 +149,21 @@ func TestExportDoesNotResetLegacyDatabase(t *testing.T) {
 	var count int
 	if err := database.QueryRow("SELECT COUNT(*) FROM job_applications").Scan(&count); err != nil || count != 1 {
 		t.Fatalf("export changed legacy rows: count=%d err=%v", count, err)
+	}
+}
+
+func TestExportMissingDatabaseDoesNotCreateOne(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
+	path, err := store.DefaultDatabasePath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := exportCSV("-", &bytes.Buffer{}); err == nil {
+		t.Fatal("export accepted missing database")
+	}
+	if _, err := os.Stat(filepath.Dir(path)); !os.IsNotExist(err) {
+		t.Fatal("export created database directory")
 	}
 }
