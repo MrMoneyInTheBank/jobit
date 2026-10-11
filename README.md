@@ -69,7 +69,7 @@ application form remain planned.
 | --- | --- | --- |
 | Move selection | Up/Down or k/j | Lists and selection menus |
 | Page navigation | PageUp/PageDown | Lists |
-| First/last row | Home/End or g/G | Lists |
+| First/last row | Home/End or g/G | Lists and details |
 | Sort | s | Open sort selection; Enter applies |
 | Filter | / | Open filter input; Enter applies |
 | Clear filter | Esc | List with an active filter |
@@ -171,3 +171,12 @@ application ID when it remains visible; otherwise it resets to the first
 match. Details and the add form retain these settings. A new matching
 application becomes selected; if filters hide it, a saved confirmation explains
 how to clear the filters. No-matches results have a separate empty state.
+
+
+The details view includes every application field and the database record ID.
+Dates use UTC calendar days; missing dates and optional text display a dash,
+and missing pay displays Unknown. Notes wrap at word boundaries and preserve
+paragraph breaks; URLs wrap without dropping characters. Use g/Home and G/End
+to jump to the top or bottom. Resizing preserves the relative reading position;
+opening another details view starts at the top. Esc restores the selected
+application and the active list sort and filters.
