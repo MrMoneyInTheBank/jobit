@@ -105,20 +105,28 @@ On Linux, use the parent directory of the database path shown by `jobit --help`.
 Check the directory before deleting it; this action cannot be undone without a
 backup.
 
-## Run and develop
+## Common repository workflows
 
-Cloning requires Git; Task v3 is optional. The tasks and check script set
-CGO_ENABLED=1 explicitly.
-
+The repository uses Task v3 to keep common development commands in
+`Taskfile.yml`. Install Task if you want the short commands below; Go and the C
+compiler described above are still required.
 From the repository root:
 
-```sh
-CGO_ENABLED=1 go run ./cmd/jobit
-```
+| Command | What it does |
+| --- | --- |
+| `task` | List available tasks. |
+| `task run` | Build `bin/jobit` and start the TUI. |
+| `task build` | Build `bin/jobit` without starting it. |
+| `task install` | Install this checkout into Go's binary directory; ensure that directory is on `PATH` to run `jobit` by name. |
+| `task fmt` | Format Go source files. |
+| `task check` | Check formatting, run `go vet`, and run tests. |
+| `task hooks` | Enable the repository's pre-commit hook in this clone. |
 
-Direct launches use the per-user location described above. Tests use isolated
-temporary databases. With Task v3 installed, `task run` builds and launches
-Jobit; `task check` runs local checks.
+The Taskfile sets `CGO_ENABLED=1`. `task run` and direct launches use the
+per-user database described above; tests use isolated temporary databases.
+For a one-off launch without Task, run `CGO_ENABLED=1 go run ./cmd/jobit`.
+Before opening a pull request, run `task check` (or `sh scripts/check.sh all`)
+and follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
 The startup path is: cmd/jobit opens and initializes SQLite, reads applications
 into model types, constructs table rows, and starts Bubble Tea.
@@ -158,13 +166,8 @@ including q, j, and k, enter text in input fields.
 The chosen lint command is `go vet ./...`. Formatting is checked with
 `gofmt -l ./cmd ./internal`; any output fails the check.
 
-```sh
-sh scripts/check.sh fmt   # task fmt-check
-sh scripts/check.sh lint  # task lint
-sh scripts/check.sh test  # task test
-sh scripts/check.sh all   # task check: runs all three, reports failure if any fail
-gofmt -w ./cmd ./internal # task fmt: apply formatting
-```
+Run `task fmt-check`, `task lint`, or `task test` for an individual check.
+Without Task, use `sh scripts/check.sh fmt`, `lint`, `test`, or `all`.
 
 All checks share scripts/check.sh. GitHub Actions runs its `all` mode, builds
 Jobit, and runs race tests on macOS and Linux for every push and pull
@@ -174,12 +177,8 @@ is available on macOS and in Ubuntu's util-linux package. They build Jobit,
 launch a real TUI in an isolated home directory, create/edit/delete a record,
 restart it, check existing database layouts, and exercise flags and CSV export.
 
-Enable the versioned local hook after each fresh clone:
-
-```sh
-git config --local core.hooksPath .githooks
-# or: task hooks
-```
+Enable the versioned local hook after each fresh clone with `task hooks`, or
+run `git config --local core.hooksPath .githooks` without Task.
 
 This replaces any existing hooksPath setting for this clone. The pre-commit
 hook runs the same formatting and lint checks when staged Go files, go.mod,
