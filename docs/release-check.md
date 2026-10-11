@@ -4,7 +4,7 @@
 
 - `scripts/check.sh all`, `go build ./cmd/jobit`, and
   `go test -race ./...` pass on macOS with `GOCACHE=/tmp/jobit-go-cache`.
-- Regression tests cover schema rejection without data loss and read-only CSV export.
+- Executable tests cover fresh startup, CRUD across restarts, flags, and read-only CSV export.
 - GitHub Actions now checks macOS and Linux. The updated workflow needs a run
   on the release commit before release verification is complete.
 

@@ -81,9 +81,7 @@ Run `jobit --help` (or `jobit -h`) to see the resolved database location.
 Help does not create directories or open the database. Normal startup creates
 that directory and applies the current embedded schema. Reinstalling the
 executable does not remove your data. Jobit does not accept a custom database
-path. On startup, Jobit replaces an incompatible **empty** pre-release schema.
-An incompatible database with applications is rejected without changing its rows.
-Back it up before removing it if you want to start fresh.
+path.
 
 ## Uninstall and delete data
 
