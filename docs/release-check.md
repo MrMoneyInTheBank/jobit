@@ -1,42 +1,26 @@
-# Release verification — 12 October 2026
+# Release verification
 
-## Current local checks
+## Local checks — 12 October 2026
 
-- `scripts/check.sh all`, `go build ./cmd/jobit`, and
-  `go test -race ./...` pass on macOS with `GOCACHE=/tmp/jobit-go-cache`.
-- Executable tests cover fresh startup, CRUD across restarts, flags, and read-only CSV export.
-- GitHub Actions now checks macOS and Linux. The updated workflow needs a run
-  on the release commit before release verification is complete.
+- `GOCACHE=/tmp/jobit-go-cache sh scripts/check.sh all` passed: formatting,
+  `go vet ./...`, and `go test ./...`.
+- `GOCACHE=/tmp/jobit-go-cache CGO_ENABLED=1 go test -race ./...` passed.
+  Apple's linker printed `LC_DYSYMTAB` warnings; the tests still passed.
+- The executable integration tests build Jobit and run its TUI in an isolated
+  terminal. They cover first launch, opening existing applications, creating,
+  editing, deleting, and reopening records, help and version flags, missing
+  export filenames, and CSV export without changing the source database.
+- Store and TUI tests cover persistence, validation, rollback, keyboard input,
+  layouts, sorting, filtering, details, and pending writes.
+- The local terminal walkthrough exercised adding records, navigation, sorting,
+  filtering, details, status updates, cancellation, and restart persistence.
 
-## Passed locally
+Environment: macOS, Go 1.25.6, CGO enabled, Apple Command Line Tools. The
+temporary `GOCACHE` path is a local sandbox workaround.
 
-- Formatting, go vet ./..., and go test ./... through scripts/check.sh.
-- CGO_ENABLED=1 go test -race ./...; no races reported. macOS linker
-  emitted LC_DYSYMTAB warnings, but all packages passed.
-- Existing regression coverage includes SQLite round trips and errors,
-  transaction rollback, complete form persistence, edit/delete recovery,
-  keyboard navigation, responsive layouts, sorting, filters, and details.
-- A staged Go fixture passed the pre-commit hook when formatted, and failed
-  when unformatted despite an unstaged formatting fix.
-- A real terminal session launched against a fresh temporary SQLite database,
-  added three applications with different locations and rankings, navigated,
-  sorted, filtered, opened details, changed status, cancelled deletion, quit,
-  and reopened the persisted records.
-- Terminal dimensions changed while list, form, sort, filter, details, and
-  deletion confirmation were open (including 30 columns by 12 lines).
-- Normal launch works without seed data.
-- Interactive use and CSV export use the fixed per-user database.
-- Git ignores databases, SQLite WAL/SHM/journal sidecars, logs, and bin/.
+## GitHub release gate
 
-Environment: macOS, Go 1.25.6, CGO enabled, Apple Command Line Tools.
-The sandbox required GOCACHE=/tmp/jobit-go-cache.
-Native Linux release binaries were not exercised.
-
-## Outstanding release gate
-
-GitHub Actions passed for commit 00420a14cfcfbfafe2760540232f65f1711e9bab:
-https://github.com/MrMoneyInTheBank/jobit/actions/runs/38132425136
-
-That run predates the current database and release changes.
-The final release commit must be published and pass the configured workflow
-before section 7 can be marked fully complete. This audit did not push commits.
+Push the release commit and wait for the **Go checks** workflow to pass on its
+exact commit on both macOS and Linux. Tag that checked commit, then publish the
+GitHub release for the tag. The workflow runs formatting, vet, tests, a build,
+and race tests. A local macOS pass does not replace the Linux workflow result.

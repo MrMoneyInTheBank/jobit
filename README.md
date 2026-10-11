@@ -305,7 +305,7 @@ hidden by the active filter is reported in the list's status line.
 - `jobit --help` (or `jobit -h`) shows usage and the database location without
   opening or creating the database.
 - `jobit --version` prints the installed module version, or development revision.
-  Release builds can set a version with `go build -ldflags "-X main.version=v1.0.0" ./cmd/jobit`.
+  Release builds can set a version with `go build -ldflags "-X main.version=v0.1.0" ./cmd/jobit`.
 - `jobit --export-csv applications.csv` exports every record and field from the
   per-user database. The output file must not already exist. Export opens the source read-only.
 - `jobit --export-csv -` writes CSV to standard output. Exports include raw text,
