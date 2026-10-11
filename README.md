@@ -25,6 +25,46 @@ The goal is to replace spreadsheets or Notion with a tool that lives entirely in
 
 Early development.
 
+## Installation
+
+Install Go 1.25.6 or newer from the [official Go installer](https://go.dev/doc/install/),
+a C compiler for your operating system, and use a terminal to run Jobit.
+
+| Platform | C compiler setup |
+| --- | --- |
+| macOS | Run `xcode-select --install` to install Apple's Command Line Tools (Clang). |
+| Ubuntu / Debian | Run `sudo apt-get update && sudo apt-get install -y build-essential`. |
+| Windows | Install a MinGW-w64 GCC toolchain matching your Go architecture and put its compiler directory on PATH. Check `gcc --version` in the shell used for installation. |
+
+Jobit's [SQLite driver requires CGO and a C compiler](https://github.com/mattn/go-sqlite3#installation)
+when building from source. The default build bundles SQLite; you do not need
+to install a SQLite server, SQLite CLI, or separate SQLite development library.
+
+Install a published version without cloning this repository (macOS/Linux):
+
+```sh
+CGO_ENABLED=1 go install github.com/MrMoneyInTheBank/jobit/cmd/jobit@latest
+jobit --help
+jobit
+```
+
+On Windows, use PowerShell:
+
+```powershell
+$env:CGO_ENABLED = "1"
+go install github.com/MrMoneyInTheBank/jobit/cmd/jobit@latest
+jobit --help
+jobit
+```
+
+Add Go's binary installation directory to PATH if `jobit` is not found:
+`go env GOBIN`, or `bin` under `go env GOPATH` when GOBIN is empty
+(normally `~/go/bin` on macOS/Linux or `%USERPROFILE%\go\bin` on Windows).
+The compiler is needed during installation; subsequent launches use the built
+executable and the local data file. No repository checkout is needed at runtime.
+`@latest` installs published source, so unreleased local changes require a build
+from the working tree.
+
 ## Run and develop
 
 Use Go 1.25.6 (the version in go.mod), Git, and a C compiler. SQLite uses
