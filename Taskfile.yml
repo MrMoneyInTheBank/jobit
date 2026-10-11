@@ -12,6 +12,10 @@ tasks:
   build:
     cmds:
       - go build -o bin/jobit ./cmd/jobit
+  install:
+    desc: Install jobit from this checkout into Go's bin directory
+    cmds:
+      - go install ./cmd/jobit
   fmt:
     cmds:
       - gofmt -w ./cmd ./internal
