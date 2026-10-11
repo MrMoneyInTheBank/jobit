@@ -74,18 +74,18 @@ func TestFilePersistenceAndConfiguration(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(rows) != len(apps) {
-				t.Fatalf("got %d rows", len(rows))
+				t.Fatalf("actual %d rows", len(rows))
 			}
 			for i, app := range apps {
 				if rows[i].ID != ids[i] || !rows[i].JobApplication.Equal(app) {
 					t.Fatalf("list mismatch: %+v", rows[i])
 				}
-				got, err := GetJobApplicationByID(db, ids[i])
+				actual, err := GetJobApplicationByID(db, ids[i])
 				if err != nil {
 					t.Fatal(err)
 				}
-				if !got.JobApplication.Equal(app) {
-					t.Fatalf("lookup mismatch: %+v", got)
+				if !actual.JobApplication.Equal(app) {
+					t.Fatalf("lookup mismatch: %+v", actual)
 				}
 			}
 		})

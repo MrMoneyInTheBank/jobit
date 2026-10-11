@@ -88,16 +88,16 @@ func TestGetJobApplications(t *testing.T) {
 		t.Fatalf("Could not add job application 2: %v", err2)
 	}
 
-	got, err := GetJobApplications(db)
+	actual, err := GetJobApplications(db)
 	if err != nil {
 		t.Fatalf("Could not get job applications: %v", err)
 	}
 
-	if len(got) != 2 {
+	if len(actual) != 2 {
 		t.Fatalf("Number of applications mismatch")
 	}
 
-	if got[0].ID != id1 || got[1].ID != id2 {
+	if actual[0].ID != id1 || actual[1].ID != id2 {
 		t.Fatalf("ID mismatch")
 	}
 }
@@ -109,11 +109,11 @@ func TestGetJobApplicationByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not add job application: %v", err)
 	}
-	got, err := GetJobApplicationByID(db, id)
+	actual, err := GetJobApplicationByID(db, id)
 	if err != nil {
 		t.Fatalf("Could not get job application: %v", err)
 	}
-	if got.ID != id {
+	if actual.ID != id {
 		t.Fatalf("ID mismatch")
 	}
 }
@@ -191,25 +191,25 @@ func TestRoundTripAndClear(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := GetJobApplicationByID(db, id)
+	actual, err := GetJobApplicationByID(db, id)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !got.JobApplication.Equal(original) {
-		t.Fatalf("round trip mismatch: %+v", got)
+	if !actual.JobApplication.Equal(original) {
+		t.Fatalf("round trip mismatch: %+v", actual)
 	}
 	var noPay *model.Pay
 	patch := model.JobApplicationPatch{Location: ptr(""), Notes: ptr(""), Pay: &noPay, Rank: ptr(model.RankOne)}
-	if err := PatchJobApplication(db, *got, patch); err != nil {
+	if err := PatchJobApplication(db, *actual, patch); err != nil {
 		t.Fatal(err)
 	}
 	original.Apply(patch)
-	got, err = GetJobApplicationByID(db, id)
+	actual, err = GetJobApplicationByID(db, id)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !got.JobApplication.Equal(original) {
-		t.Fatalf("clearing mismatch: %+v", got)
+	if !actual.JobApplication.Equal(original) {
+		t.Fatalf("clearing mismatch: %+v", actual)
 	}
 }
 
@@ -218,11 +218,11 @@ func TestSeedDB(t *testing.T) {
 	if err := SeedDB(db, 50); err != nil {
 		t.Fatal(err)
 	}
-	got, err := GetJobApplications(db)
+	actual, err := GetJobApplications(db)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 50 {
-		t.Fatalf("got %d rows", len(got))
+	if len(actual) != 50 {
+		t.Fatalf("actual %d rows", len(actual))
 	}
 }

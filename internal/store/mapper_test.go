@@ -19,12 +19,12 @@ func TestModelMappingAndSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := GetJobApplicationByID(db, id)
+	actual, err := GetJobApplicationByID(db, id)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !got.JobApplication.Equal(app) || got.JobApplication.Pay == nil || got.JobApplication.Pay.Min == nil || *got.JobApplication.Pay.Min != 0 || got.JobApplication.Pay.Max != nil {
-		t.Fatalf("model round trip: %+v", got)
+	if !actual.JobApplication.Equal(app) || actual.JobApplication.Pay == nil || actual.JobApplication.Pay.Min == nil || *actual.JobApplication.Pay.Min != 0 || actual.JobApplication.Pay.Max != nil {
+		t.Fatalf("model round trip: %+v", actual)
 	}
 	var location, mode, notes string
 	var min, max sql.NullInt64

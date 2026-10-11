@@ -9,7 +9,7 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
 )
 
-func randomJobApplication(r *rand.Rand) model.JobApplication {
+func randomJobApplication(randomGenerator *rand.Rand) model.JobApplication {
 	now := time.Now()
 
 	companyNames := []string{
@@ -50,69 +50,69 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 		model.WorkModeOnsite,
 	}
 
-	app := model.JobApplication{
-		CompanyName:     companyNames[r.Intn(len(companyNames))],
-		Position:        positions[r.Intn(len(positions))],
-		ApplicationDate: now.AddDate(0, 0, -r.Intn(180)), // last 6 months
-		Status:          statuses[r.Intn(len(statuses))],
-		Referral:        r.Float64() < 0.3, // 30% referral
-		Rank:            model.Ranking(1 + r.Intn(5)),
+	application := model.JobApplication{
+		CompanyName:     companyNames[randomGenerator.Intn(len(companyNames))],
+		Position:        positions[randomGenerator.Intn(len(positions))],
+		ApplicationDate: now.AddDate(0, 0, -randomGenerator.Intn(180)), // last 6 months
+		Status:          statuses[randomGenerator.Intn(len(statuses))],
+		Referral:        randomGenerator.Float64() < 0.3, // 30% referral
+		Rank:            model.Ranking(1 + randomGenerator.Intn(5)),
 	}
 
-	if r.Float64() < 0.8 {
-		rt := remoteTypes[r.Intn(len(remoteTypes))]
-		app.WorkMode = rt
+	if randomGenerator.Float64() < 0.8 {
+		workMode := remoteTypes[randomGenerator.Intn(len(remoteTypes))]
+		application.WorkMode = workMode
 	}
 
-	if r.Float64() < 0.7 {
-		loc := locations[r.Intn(len(locations))]
-		app.Location = loc
+	if randomGenerator.Float64() < 0.7 {
+		location := locations[randomGenerator.Intn(len(locations))]
+		application.Location = location
 	}
 
-	if r.Float64() < 0.6 {
-		min := 80_000 + r.Intn(70_000)
-		max := min + r.Intn(50_000)
-		cur := currencies[r.Intn(len(currencies))]
+	if randomGenerator.Float64() < 0.6 {
+		minimumPay := 80_000 + randomGenerator.Intn(70_000)
+		maximumPay := minimumPay + randomGenerator.Intn(50_000)
+		currency := currencies[randomGenerator.Intn(len(currencies))]
 
-		app.Pay = &model.Pay{
-			Min:      &min,
-			Max:      &max,
-			Currency: &cur,
+		application.Pay = &model.Pay{
+			Min:      &minimumPay,
+			Max:      &maximumPay,
+			Currency: &currency,
 		}
 	}
 
-	if r.Float64() < 0.4 {
+	if randomGenerator.Float64() < 0.4 {
 		note := "Reached out to recruiter on LinkedIn"
-		app.Notes = note
+		application.Notes = note
 	}
 
-	if r.Float64() < 0.5 {
-		jp := "https://jobs.example.com/posting"
-		app.JobPostingLink = jp
+	if randomGenerator.Float64() < 0.5 {
+		postingLink := "https://jobs.example.com/posting"
+		application.JobPostingLink = postingLink
 	}
-	if r.Float64() < 0.5 {
-		ws := "https://www." + app.CompanyName + ".com"
-		app.CompanyWebsiteLink = ws
+	if randomGenerator.Float64() < 0.5 {
+		websiteLink := "https://www." + application.CompanyName + ".com"
+		application.CompanyWebsiteLink = websiteLink
 	}
 
-	return app
+	return application
 }
 
 func SeedDB(db *sql.DB, count int) error {
 	ctx := context.Background()
-	tx, err := db.BeginTx(ctx, nil)
+	transaction, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	defer tx.Rollback()
+	defer transaction.Rollback()
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	randomGenerator := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for range count {
-		app := randomJobApplication(r)
-		if _, err2 := tx.ExecContext(ctx, insertQuery, applicationArgs(app)...); err2 != nil {
+		application := randomJobApplication(randomGenerator)
+		if _, err2 := transaction.ExecContext(ctx, insertQuery, applicationArgs(application)...); err2 != nil {
 			return err2
 		}
 	}
-	return tx.Commit()
+	return transaction.Commit()
 }

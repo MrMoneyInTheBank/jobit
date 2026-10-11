@@ -13,13 +13,13 @@ var ErrInvalidID = errors.New("Invalid ID")
 
 // applicationArgs converts optional pay fields to SQL NULLs. Other fields use model values.
 func applicationArgs(app model.JobApplication) []any {
-	var min, max, currency any
+	var minimumPay, maximumPay, currency any
 	if app.Pay != nil {
 		if app.Pay.Min != nil {
-			min = *app.Pay.Min
+			minimumPay = *app.Pay.Min
 		}
 		if app.Pay.Max != nil {
-			max = *app.Pay.Max
+			maximumPay = *app.Pay.Max
 		}
 		if app.Pay.Currency != nil {
 			currency = *app.Pay.Currency
@@ -28,7 +28,7 @@ func applicationArgs(app model.JobApplication) []any {
 	return []any{
 		app.CompanyName, app.Position, app.ApplicationDate.UTC().Format("2006-01-02"),
 		string(app.Status), app.Referral, string(app.WorkMode), app.Location,
-		min, max, currency, int(app.Rank), app.Notes, app.JobPostingLink, app.CompanyWebsiteLink,
+		minimumPay, maximumPay, currency, int(app.Rank), app.Notes, app.JobPostingLink, app.CompanyWebsiteLink,
 	}
 }
 
@@ -58,40 +58,44 @@ func validateApplication(app model.JobApplication) error {
 type rowScanner interface{ Scan(...any) error }
 
 func scanApplication(row rowScanner) (model.StoredJobApplication, error) {
-	var stored model.StoredJobApplication
-	app := &stored.JobApplication
-	var date, status, mode string
-	var rank int64
-	var min, max sql.NullInt64
+	var storedApplication model.StoredJobApplication
+	application := &storedApplication.JobApplication
+	var applicationDate, status, workMode string
+	var ranking int64
+	var minimumPay, maximumPay sql.NullInt64
 	var currency sql.NullString
+
 	if err := row.Scan(
-		&stored.ID, &app.CompanyName, &app.Position, &date, &status,
-		&app.Referral, &mode, &app.Location, &min, &max, &currency,
-		&rank, &app.Notes, &app.JobPostingLink, &app.CompanyWebsiteLink,
+		&storedApplication.ID, &application.CompanyName, &application.Position, &applicationDate, &status,
+		&application.Referral, &workMode, &application.Location, &minimumPay, &maximumPay, &currency,
+		&ranking, &application.Notes, &application.JobPostingLink, &application.CompanyWebsiteLink,
 	); err != nil {
-		return stored, err
+		return storedApplication, err
 	}
-	parsed, err := time.Parse("2006-01-02", date)
+
+	parsedDate, err := time.Parse("2006-01-02", applicationDate)
 	if err != nil {
-		return stored, fmt.Errorf("application %d: invalid application date %q: %w", stored.ID, date, err)
+		return storedApplication, fmt.Errorf("application %d: invalid application date %q: %w", storedApplication.ID, applicationDate, err)
 	}
-	app.ApplicationDate = parsed
-	app.Status = model.Status(status)
-	app.WorkMode = model.WorkMode(mode)
-	app.Rank = model.Ranking(rank)
-	if min.Valid || max.Valid || currency.Valid {
-		app.Pay = &model.Pay{}
-		if min.Valid {
-			v := int(min.Int64)
-			app.Pay.Min = &v
+	application.ApplicationDate = parsedDate
+	application.Status = model.Status(status)
+	application.WorkMode = model.WorkMode(workMode)
+	application.Rank = model.Ranking(ranking)
+
+	if minimumPay.Valid || maximumPay.Valid || currency.Valid {
+		application.Pay = &model.Pay{}
+		if minimumPay.Valid {
+			amount := int(minimumPay.Int64)
+			application.Pay.Min = &amount
 		}
-		if max.Valid {
-			v := int(max.Int64)
-			app.Pay.Max = &v
+		if maximumPay.Valid {
+			amount := int(maximumPay.Int64)
+			application.Pay.Max = &amount
 		}
 		if currency.Valid {
-			app.Pay.Currency = &currency.String
+			application.Pay.Currency = &currency.String
 		}
 	}
-	return stored, nil
+
+	return storedApplication, nil
 }

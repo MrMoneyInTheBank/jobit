@@ -15,17 +15,18 @@ func TestPlatformLocations(t *testing.T) {
 		{"linux", "XDG_DATA_HOME", filepath.Join(root, "data"), filepath.Join(root, "data", "jobit", "jobit.db")},
 		{"linux", "XDG_DATA_HOME", "relative", filepath.Join(root, ".local", "share", "jobit", "jobit.db")},
 	} {
-		got, err := databasePath(tc.platform, func(key string) string {
+		actual, err := databasePath(tc.platform, func(key string) string {
 			if key == tc.env {
 				return tc.value
 			}
 			return ""
 		}, home)
-		if err != nil || got != tc.want {
-			t.Fatalf("%s: %q %v, want %q", tc.platform, got, err, tc.want)
+		if err != nil || actual != tc.want {
+			t.Fatalf("%s: %q %v, want %q", tc.platform, actual, err, tc.want)
 		}
 	}
 }
+
 func TestDefaultDatabaseIndependentOfWorkingDirectory(t *testing.T) {
 	root := t.TempDir()
 	for _, key := range []string{"HOME", "XDG_DATA_HOME"} {
@@ -61,15 +62,16 @@ func TestDefaultDatabaseIndependentOfWorkingDirectory(t *testing.T) {
 		t.Fatal("working directory changed database:", err)
 	}
 }
+
 func TestOverrideNeedsNoDefaultLocation(t *testing.T) {
 	t.Setenv("HOME", "")
 	t.Setenv("XDG_DATA_HOME", "")
 	t.Setenv("JOBIT_DB_DSN", ":memory:")
-	if got, err := DatabaseDSN(nil); err != nil || got != ":memory:" {
-		t.Fatalf("%q %v", got, err)
+	if actual, err := DatabaseDSN(nil); err != nil || actual != ":memory:" {
+		t.Fatalf("%q %v", actual, err)
 	}
 	explicit := "file:override?mode=memory&cache=shared"
-	if got, err := DatabaseDSN(&explicit); err != nil || got != explicit {
-		t.Fatalf("%q %v", got, err)
+	if actual, err := DatabaseDSN(&explicit); err != nil || actual != explicit {
+		t.Fatalf("%q %v", actual, err)
 	}
 }
