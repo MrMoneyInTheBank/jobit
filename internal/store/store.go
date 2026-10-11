@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -25,6 +26,10 @@ func OpenDB(dsn *string) (*sql.DB, error) {
 		return nil, err
 	}
 
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("open database: %w", err)
+	}
 	return db, nil
 }
 
