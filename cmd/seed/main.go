@@ -2,12 +2,18 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/store"
 )
 
 func main() {
-	db, err := store.OpenDB(nil)
+	var dsn *string
+	if os.Getenv("JOBIT_DB_DSN") == "" {
+		path := "./dev.db"
+		dsn = &path
+	}
+	db, err := store.OpenDB(dsn)
 	if err != nil {
 		log.Fatalf("Could not open database: %v", err)
 	}
