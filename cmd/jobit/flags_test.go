@@ -14,7 +14,7 @@ import (
 
 func TestHelpWithoutDatabaseSideEffects(t *testing.T) {
 	root := t.TempDir()
-	for _, key := range []string{"HOME", "USERPROFILE", "LOCALAPPDATA", "XDG_DATA_HOME"} {
+	for _, key := range []string{"HOME", "XDG_DATA_HOME"} {
 		t.Setenv(key, root)
 	}
 	t.Setenv("JOBIT_DB_DSN", "")

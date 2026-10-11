@@ -14,18 +14,13 @@ func DefaultDatabasePath() (string, error) {
 func databasePath(platform string, getenv func(string) string, home func() (string, error)) (string, error) {
 	var base string
 	switch platform {
-	case "windows":
-		base = getenv("LOCALAPPDATA")
-		if base == "" {
-			return "", fmt.Errorf("LOCALAPPDATA is not set")
-		}
 	case "darwin":
 		h, err := home()
 		if err != nil {
 			return "", err
 		}
 		base = filepath.Join(h, "Library", "Application Support")
-	default:
+	case "linux":
 		base = getenv("XDG_DATA_HOME")
 		if base == "" || !filepath.IsAbs(base) {
 			h, err := home()
@@ -34,6 +29,8 @@ func databasePath(platform string, getenv func(string) string, home func() (stri
 			}
 			base = filepath.Join(h, ".local", "share")
 		}
+	default:
+		return "", fmt.Errorf("unsupported operating system: %s", platform)
 	}
 	if !filepath.IsAbs(base) {
 		return "", fmt.Errorf("application data directory must be absolute")

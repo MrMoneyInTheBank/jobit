@@ -14,7 +14,6 @@ func TestPlatformLocations(t *testing.T) {
 		{"linux", "", "", filepath.Join(root, ".local", "share", "jobit", "jobit.db")},
 		{"linux", "XDG_DATA_HOME", filepath.Join(root, "data"), filepath.Join(root, "data", "jobit", "jobit.db")},
 		{"linux", "XDG_DATA_HOME", "relative", filepath.Join(root, ".local", "share", "jobit", "jobit.db")},
-		{"windows", "LOCALAPPDATA", root, filepath.Join(root, "jobit", "jobit.db")},
 	} {
 		got, err := databasePath(tc.platform, func(key string) string {
 			if key == tc.env {
@@ -29,7 +28,7 @@ func TestPlatformLocations(t *testing.T) {
 }
 func TestDefaultDatabaseIndependentOfWorkingDirectory(t *testing.T) {
 	root := t.TempDir()
-	for _, key := range []string{"HOME", "USERPROFILE", "LOCALAPPDATA", "XDG_DATA_HOME"} {
+	for _, key := range []string{"HOME", "XDG_DATA_HOME"} {
 		t.Setenv(key, root)
 	}
 	t.Setenv("JOBIT_DB_DSN", "")
@@ -64,8 +63,6 @@ func TestDefaultDatabaseIndependentOfWorkingDirectory(t *testing.T) {
 }
 func TestOverrideNeedsNoDefaultLocation(t *testing.T) {
 	t.Setenv("HOME", "")
-	t.Setenv("USERPROFILE", "")
-	t.Setenv("LOCALAPPDATA", "")
 	t.Setenv("XDG_DATA_HOME", "")
 	t.Setenv("JOBIT_DB_DSN", ":memory:")
 	if got, err := DatabaseDSN(nil); err != nil || got != ":memory:" {

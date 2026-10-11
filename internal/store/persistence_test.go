@@ -14,8 +14,6 @@ func TestFilePersistenceAndConfiguration(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("JOBIT_DB_DSN", "")
 	t.Setenv("HOME", t.TempDir())
-	t.Setenv("USERPROFILE", t.TempDir())
-	t.Setenv("LOCALAPPDATA", t.TempDir())
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	defaultPath, err := DefaultDatabasePath()
 	if err != nil {

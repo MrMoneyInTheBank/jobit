@@ -17,7 +17,7 @@ func OpenDB(dsn *string) (*sql.DB, error) {
 		return nil, fmt.Errorf("resolve database location: %w", err)
 	}
 	if (dsn == nil || *dsn == "") && os.Getenv("JOBIT_DB_DSN") == "" {
-		if err := os.MkdirAll(filepath.Dir(finalDSN), 0700); err != nil {
+		if err := os.MkdirAll(filepath.Dir(finalDSN), 0o700); err != nil {
 			return nil, fmt.Errorf("create database directory: %w", err)
 		}
 	}
