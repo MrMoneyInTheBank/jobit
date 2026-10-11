@@ -30,6 +30,9 @@ func main() {
 		id, err := store.AddJobApplication(db, app)
 		return model.StoredJobApplication{ID: id, JobApplication: app}, err
 	})
+	job_list.SetMutationHandlers(func(app model.StoredJobApplication) error {
+		return store.PatchJobApplication(db, app, model.JobApplicationPatch{})
+	}, func(id int64) error { return store.DeleteJobApplicationByID(db, id) })
 	if _, err := tea.NewProgram(&job_list, tea.WithAltScreen()).Run(); err != nil {
 		log.Fatalf("Could not run TUI: %v", err)
 	}
