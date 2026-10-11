@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -11,14 +12,14 @@ import (
 )
 
 func OpenDB(dsn *string) (*sql.DB, error) {
-	finalDSN := "./jobit.db"
-
-	if env := os.Getenv("JOBIT_DB_DSN"); env != "" {
-		finalDSN = env
+	finalDSN, err := DatabaseDSN(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("resolve database location: %w", err)
 	}
-
-	if dsn != nil && *dsn != "" {
-		finalDSN = *dsn
+	if (dsn == nil || *dsn == "") && os.Getenv("JOBIT_DB_DSN") == "" {
+		if err := os.MkdirAll(filepath.Dir(finalDSN), 0700); err != nil {
+			return nil, fmt.Errorf("create database directory: %w", err)
+		}
 	}
 
 	db, err := sql.Open("sqlite3", finalDSN)

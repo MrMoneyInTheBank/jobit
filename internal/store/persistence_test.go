@@ -13,8 +13,16 @@ import (
 func TestFilePersistenceAndConfiguration(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("JOBIT_DB_DSN", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", t.TempDir())
+	t.Setenv("LOCALAPPDATA", t.TempDir())
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	defaultPath, err := DefaultDatabasePath()
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tc := range []struct{ name, env, explicit, file string }{
-		{"default", "", "", "jobit.db"},
+		{"default", "", "", defaultPath},
 		{"environment", "environment.db", "", "environment.db"},
 		{"explicit", "unused.db", "explicit.db", "explicit.db"},
 	} {
@@ -24,7 +32,11 @@ func TestFilePersistenceAndConfiguration(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Cleanup(func() { db.Close() })
+			t.Cleanup(func() {
+				if db != nil {
+					db.Close()
+				}
+			})
 			mustInitDB(t, db)
 			rows, err := GetJobApplications(db)
 			if err != nil || len(rows) != 0 {
@@ -50,7 +62,7 @@ func TestFilePersistenceAndConfiguration(t *testing.T) {
 				t.Fatal(err)
 			}
 			// Reopen the expected path explicitly to prove which file was selected.
-			db, err = OpenDB(ptr(filepath.Join(".", tc.file)))
+			db, err = OpenDB(ptr(tc.file))
 			if err != nil {
 				t.Fatal(err)
 			}
