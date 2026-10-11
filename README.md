@@ -23,7 +23,9 @@ The goal is to replace spreadsheets or Notion with a tool that lives entirely in
 
 ## Status
 
-Early development.
+Implemented: local persistence, responsive application list, sorting and filtering,
+full details, validated creation and editing, status updates, and confirmed deletion.
+Release verification is tracked in docs/release-check.md.
 
 ## Installation
 
@@ -106,15 +108,17 @@ From the repository root:
 CGO_ENABLED=1 go run ./cmd/jobit
 ```
 
-Development and production use the same per-user location described above.
+Direct launches and production use the per-user location described above.
+The development task defaults to ./dev.db to isolate sample data.
 Use `JOBIT_DB_DSN=./dev.db CGO_ENABLED=1 go run ./cmd/jobit` for a separate
 development file. An explicit nonempty DSN passed to store.OpenDB takes
 precedence over the environment. Tests use isolated temporary databases.
 
-With Task v3 installed, `task run-dev` runs that same command and
+With Task v3 installed, `task run-dev` runs with ./dev.db (unless JOBIT_DB_DSN is set), and
 `task run-prod` builds `bin/jobit` and runs it with the same database rules.
 `task seed` (or `CGO_ENABLED=1 go run ./cmd/seed`) appends 50 sample applications
-to the selected database. Use a separate development database when seeding.
+to ./dev.db by default. JOBIT_DB_DSN explicitly overrides both development and
+seed commands; setting it to your personal database will modify that database.
 
 The startup path is: cmd/jobit opens and initializes SQLite, reads applications
 through the store mapper, constructs table rows, and starts Bubble Tea.
