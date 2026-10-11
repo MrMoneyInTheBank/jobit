@@ -23,7 +23,7 @@
 
 Environment: macOS, Go 1.25.6, CGO enabled, Apple Command Line Tools.
 The sandbox required GOCACHE=/tmp/jobit-go-cache.
-Native Linux and Windows release binaries were not exercised.
+Native Linux release binaries were not exercised.
 
 ## Outstanding release gate
 

@@ -29,6 +29,8 @@ Release verification is tracked in docs/release-check.md.
 
 ## Installation
 
+macOS is the primary supported platform; Linux is also supported.
+
 Install Go 1.25.6 or newer from the [official Go installer](https://go.dev/doc/install/),
 a C compiler for your operating system, and use a terminal to run Jobit.
 
@@ -36,7 +38,6 @@ a C compiler for your operating system, and use a terminal to run Jobit.
 | --- | --- |
 | macOS | Run `xcode-select --install` to install Apple's Command Line Tools (Clang). |
 | Ubuntu / Debian | Run `sudo apt-get update && sudo apt-get install -y build-essential`. |
-| Windows | Install a MinGW-w64 GCC toolchain matching your Go architecture and put its compiler directory on PATH. Check `gcc --version` in the shell used for installation. |
 
 Jobit's [SQLite driver requires CGO and a C compiler](https://github.com/mattn/go-sqlite3#installation)
 when building from source. The default build bundles SQLite; you do not need
@@ -50,18 +51,9 @@ jobit --help
 jobit
 ```
 
-On Windows, use PowerShell:
-
-```powershell
-$env:CGO_ENABLED = "1"
-go install github.com/MrMoneyInTheBank/jobit/cmd/jobit@latest
-jobit --help
-jobit
-```
-
 Add Go's binary installation directory to PATH if `jobit` is not found:
 `go env GOBIN`, or `bin` under `go env GOPATH` when GOBIN is empty
-(normally `~/go/bin` on macOS/Linux or `%USERPROFILE%\go\bin` on Windows).
+(normally `~/go/bin` on macOS or Linux).
 The compiler is needed during installation; subsequent launches use the built
 executable and the local data file. No repository checkout is needed at runtime.
 `@latest` installs published source, so unreleased local changes require a build
@@ -74,8 +66,7 @@ Jobit uses one persistent database per user, independent of where it is launched
 | Platform | Default database |
 | --- | --- |
 | macOS | `~/Library/Application Support/jobit/jobit.db` |
-| Linux / other Unix | `$XDG_DATA_HOME/jobit/jobit.db`, or `~/.local/share/jobit/jobit.db` when XDG_DATA_HOME is absent or relative |
-| Windows | `%LOCALAPPDATA%\jobit\jobit.db` |
+| Linux | `$XDG_DATA_HOME/jobit/jobit.db`, or `~/.local/share/jobit/jobit.db` when XDG_DATA_HOME is absent or relative |
 
 Run `jobit --help` (or `jobit -h`) to see the resolved default and effective
 database locations. Help does not create directories or open the database.
@@ -243,7 +234,8 @@ Ctrl+S validates and saves. Invalid input stays in the form with the invalid
 field focused and an error displayed; database failures also retain the draft.
 Saving disables further edits and repeat submissions until the result arrives.
 Esc immediately discards the unsaved draft and returns to the list without
-writing a record; Ctrl+C quits the app and also abandons unsaved input. Successful
+writing a record; Ctrl+C quits the app and also abandons unsaved input. Quit requests are ignored
+while a database save or deletion is pending; retry after the operation finishes. Successful
 saves select the new row if visible under the active filters. Entries persist
 in the selected SQLite database across launches.
 
@@ -293,3 +285,25 @@ position; Enter permanently deletes the record, while Esc cancels. Failed
 updates retain the draft, and failed deletions retain the record and allow a
 retry. Sort and filter settings survive both operations; an updated record
 hidden by the active filter is reported in the list's status line.
+
+
+## Command-line utilities
+
+- `jobit --version` prints the installed module version, or development revision.
+  Release builds can set a version with `go build -ldflags "-X main.version=v1.0.0" ./cmd/jobit`.
+- `jobit --export-csv applications.csv` exports every record and field from the
+  selected database. The output file must not already exist.
+- `jobit --export-csv -` writes CSV to standard output. Exports include raw text,
+  multiline notes, separate pay columns, and database IDs; filters do not apply.
+  Empty optional pay fields remain empty and explicit zero amounts remain zero.
+- `jobit --help` lists options and database locations.
+
+Only one interactive Jobit instance may run per user data directory, even when
+JOBIT_DB_DSN selects another database. A second launch directs you to the
+existing terminal tab/window; attaching to another terminal is not supported.
+The operating system releases the instance lock on exit or crash. The lock file
+can remain on disk and does not need deleting. Help, version, and CSV export
+can run without starting another interactive session.
+
+Ctrl+C and termination requests are ignored during pending database writes.
+Force-killing the process or closing its terminal cannot be prevented.
