@@ -46,3 +46,8 @@ todo.md
 todo.txt
 
 /bin/
+
+# SQLite transaction sidecars
+*.db-wal
+*.db-shm
+*.db-journal
