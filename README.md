@@ -112,9 +112,11 @@ to ./dev.db by default. JOBIT_DB_DSN explicitly overrides both development and
 seed commands; setting it to your personal database will modify that database.
 
 The startup path is: cmd/jobit opens and initializes SQLite, reads applications
-through the store mapper, constructs table rows, and starts Bubble Tea.
+into model types, constructs table rows, and starts Bubble Tea.
 cmd/seed uses the same database selection and schema, then inserts sample rows.
 The schema stores pay in separate nullable min/max/currency columns.
+On first launch with the revised schema, Jobit discards rows from an older
+database schema. Back up an old database first if you need its data.
 
 ## Keyboard contract
 
@@ -177,8 +179,9 @@ stages files. Run the full check command before pushing; CI also runs tests.
 ## Current verification baseline
 
 The store and TUI use StoredJobApplication to carry database identity alongside
-the application data. Rank 0 maps to SQL NULL (unranked). Pay remains structured
-in nullable columns; patches can clear pay and optional strings.
+the application data. Ranking is required from 1–5. Ordinary optional text uses
+empty strings; pay remains structured in nullable columns so absent amounts and
+explicit zero amounts remain distinct. Patches can clear pay and optional strings.
 
 Local verification on macOS used Go 1.25.6, CGO_ENABLED=1, /usr/bin/clang,
 and the Command Line Tools MacOSX15.0 SDK. The sandbox disallowed the normal
@@ -193,8 +196,8 @@ and commit failures.
 
 ## Application list and details
 
-The list shows company, position, location, and ranking. Missing locations and
-unranked applications display a dash. The selected row is highlighted; the
+The list shows company, position, location, and ranking. Missing locations
+display a dash. The selected row is highlighted; the
 header shows its position in the list. Column widths and visible row count
 adapt to the terminal, with long values shortened in the list.
 
@@ -214,7 +217,7 @@ are controlled selectors: typing, pasting, and character deletion cannot create
 invalid values. Ctrl+U resets a selector to its default. Work mode defaults to
 unspecified.
 
-Ranking is blank or 0 for unranked, otherwise 1–5. Pay amounts are optional,
+Ranking is required and must be 1–5. Pay amounts are optional,
 nonnegative whole numbers without commas, and maximum must be at least minimum
 when both are supplied. A blank amount stays absent; an explicit 0 is retained.
 Invalid ranking and pay characters are rejected while typing or pasting.
@@ -244,8 +247,8 @@ in the selected SQLite database across launches.
 
 Press s, choose with j/k or arrows, then Enter to apply. Esc cancels.
 Sort by added order, company, position, location, or ranking in either
-direction. Text sorts ignore case and surrounding whitespace. Empty values
-and unranked applications stay last in both directions; ties use ascending
+direction. Text sorts ignore case and surrounding whitespace. Empty text values
+stay last in both directions; ties use ascending
 database ID. The default is oldest added first.
 
 Press / to filter. Search is a case-insensitive substring across company,
