@@ -61,9 +61,8 @@ The schema stores pay in separate nullable min/max/currency columns.
 ## Keyboard contract
 
 These are the intended bindings across screens. The list, scrollable details,
-and an essentials add form are implemented.
-Sorting and text/status filtering are implemented. Editing and the full
-application form remain planned.
+and a complete add form are implemented, along with sorting and text/status
+filtering. Editing existing applications remains planned.
 
 | Action | Keys | Screen / behavior |
 | --- | --- | --- |
@@ -74,10 +73,10 @@ application form remain planned.
 | Filter | / | Open filter input; Enter applies |
 | Clear filter | Esc | List with an active filter |
 | Details | Enter | Open selected application |
-| Add / edit | a / e | Open form from list / details |
+| Add | a | Open the full application form from the list |
 | Next / previous field | Tab / Shift+Tab | Forms |
 | Submit form | Ctrl+S | Save; Enter stays available for fields |
-| Cancel / back | Esc | Close input/menu or return to previous screen |
+| Cancel / back | Esc | Discard form input, close a menu, or return to the list |
 | Quit | q | List and details, outside text inputs |
 | Quit anywhere | Ctrl+C | All screens |
 
@@ -143,13 +142,35 @@ wrap and scroll with j/k, arrows, or PageUp/PageDown. Esc returns to the same
 selected row. Below 24 columns or 9 lines, a resize prompt replaces the view;
 Ctrl+C remains available.
 
-Press a to add an application, including from the empty list. The current
-essentials form accepts company, position, location, and ranking. Company and
-position are required; ranking is blank/0 for unranked or 1–5. Tab/Shift+Tab
-move between fields, Backspace deletes, Ctrl+S saves, and Esc cancels. The
-form defaults to submitted status and today's UTC date. The saved row is
-selected, and errors keep the input available for correction. Remaining fields
-and richer editing are planned for the full form in section 6.
+Press a to add an application, including from the empty list. The form includes
+company, position, location, ranking, application date, status, referral, work
+mode, minimum and maximum pay, currency, notes, and both links.
+
+Company and position are required and trimmed. The date defaults to today in
+UTC and must be a valid YYYY-MM-DD date. Status defaults to submitted; referral
+defaults to no. Use Left/Right to cycle status, referral, and work mode, or
+Ctrl+U to clear and type a value. Work mode defaults to unspecified.
+
+Ranking is blank or 0 for unranked, otherwise 1–5. Pay amounts are optional,
+nonnegative whole numbers without commas, and maximum must be at least minimum
+when both are supplied. A blank amount stays absent; an explicit 0 is retained.
+Currency is optional and accepts three letters, normalized to uppercase. Pay
+can contain just one amount or currency alone. Notes and links are optional.
+
+Tab/Shift+Tab move between fields; Enter moves to the next field except in
+notes, where it inserts a newline. Left/Right move the text cursor in other
+fields; Home/End (or Ctrl+A/Ctrl+E) jump to its ends. Backspace/Delete edit text,
+and Ctrl+U clears the field. Long values and notes scroll to keep the cursor
+visible. Each field shows its input rule above the form.
+
+Ctrl+S validates and saves. Invalid input stays in the form with the invalid
+field focused and an error displayed; database failures also retain the draft.
+Saving disables further edits and repeat submissions until the result arrives.
+Esc immediately discards the unsaved draft and returns to the list without
+writing a record; Ctrl+C quits the app and also abandons unsaved input. Successful
+saves select the new row if visible under the active filters. Entries persist
+in the selected SQLite database across launches.
+
 
 ## Sorting and filtering
 
