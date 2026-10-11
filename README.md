@@ -65,16 +65,40 @@ executable and the local data file. No repository checkout is needed at runtime.
 `@latest` installs published source, so unreleased local changes require a build
 from the working tree.
 
+## Data location
+
+Jobit uses one persistent database per user, independent of where it is launched:
+
+| Platform | Default database |
+| --- | --- |
+| macOS | `~/Library/Application Support/jobit/jobit.db` |
+| Linux / other Unix | `$XDG_DATA_HOME/jobit/jobit.db`, or `~/.local/share/jobit/jobit.db` when XDG_DATA_HOME is absent or relative |
+| Windows | `%LOCALAPPDATA%\jobit\jobit.db` |
+
+Run `jobit --help` (or `jobit -h`) to see the resolved default and effective
+database locations. Help does not create directories or open the database.
+Normal startup creates the default directory and database, then initializes
+the embedded schema. Reinstalling the executable does not remove your data.
+
+`JOBIT_DB_DSN` overrides the default with a SQLite path or DSN. Relative
+overrides are relative to your working directory; custom parent directories
+must already exist. For example:
+
+```sh
+JOBIT_DB_DSN="$HOME/my-applications.db" jobit
+```
+
+Earlier development builds used `./jobit.db`. Existing files are not moved or
+merged automatically. To continue using one, set JOBIT_DB_DSN to its absolute
+path. To adopt the new default, close all Jobit instances, back up the old file,
+create the directory shown by `jobit --help`, and copy the database there.
+Do not overwrite an existing destination database. If SQLite sidecar files
+remain, use a SQLite backup procedure rather than copying a live database.
+
 ## Run and develop
 
-Use Go 1.25.6 (the version in go.mod), Git, and a C compiler. SQLite uses
-github.com/mattn/go-sqlite3 with CGO; its default build bundles SQLite, so no
-separate SQLite library installation is needed.
-
-- macOS: install Xcode Command Line Tools with `xcode-select --install`.
-- Ubuntu/Debian: install `build-essential`.
-- Set `CGO_ENABLED=1` for Go builds, tests, and vet. The tasks and check script
-  set this explicitly.
+Cloning requires Git; Task v3 is optional. The tasks and check script set
+CGO_ENABLED=1 explicitly.
 
 From the repository root:
 
@@ -82,11 +106,10 @@ From the repository root:
 CGO_ENABLED=1 go run ./cmd/jobit
 ```
 
-The default database is `./jobit.db`, relative to the working directory.
-`JOBIT_DB_DSN` overrides it, for example
-`JOBIT_DB_DSN=./dev.db CGO_ENABLED=1 go run ./cmd/jobit`.
-An explicit nonempty DSN passed to store.OpenDB takes precedence over the
-environment. Tests explicitly use `:memory:` to avoid touching local data.
+Development and production use the same per-user location described above.
+Use `JOBIT_DB_DSN=./dev.db CGO_ENABLED=1 go run ./cmd/jobit` for a separate
+development file. An explicit nonempty DSN passed to store.OpenDB takes
+precedence over the environment. Tests use isolated temporary databases.
 
 With Task v3 installed, `task run-dev` runs that same command and
 `task run-prod` builds `bin/jobit` and runs it with the same database rules.
