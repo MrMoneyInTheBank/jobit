@@ -140,7 +140,7 @@ func TestEmptyAndForm(t *testing.T) {
 	if j.formError == "" {
 		t.Fatal("missing validation")
 	}
-	j.fields = [4]string{" Acme ", " Engineer ", " Remote ", "9"}
+	copy(j.fields[:4], []string{" Acme ", " Engineer ", " Remote ", "9"})
 	key(&j, "ctrl+s")
 	if j.saving {
 		t.Fatal("invalid rank saved")
@@ -165,7 +165,7 @@ func TestSaveFailureRetainsInput(t *testing.T) {
 	})
 	key(&j, "j")
 	key(&j, "a")
-	j.fields = [4]string{"Acme", "Engineer", "", ""}
+	copy(j.fields[:4], []string{"Acme", "Engineer", "", ""})
 	cmd := key(&j, "ctrl+s")
 	j.Update(cmd())
 	if j.screen != addScreen || j.fields[0] != "Acme" || j.formError != "database locked" {

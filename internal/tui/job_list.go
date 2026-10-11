@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
@@ -36,7 +35,8 @@ type JobList struct {
 	screen               screen
 	details              viewport.Model
 	save                 SaveApplication
-	fields               [4]string
+	fields               [fieldCount]string
+	cursor               int
 	field                int
 	formError            string
 	saving               bool
@@ -220,7 +220,8 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "a" {
 				jl.screen = addScreen
-				jl.fields = [4]string{}
+				jl.fields = defaultFields()
+				jl.cursor = 0
 				jl.field = 0
 				jl.formError = ""
 				return jl, nil
@@ -236,90 +237,6 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		jl.details, cmd = jl.details.Update(msg)
 	}
 	return jl, cmd
-}
-
-func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
-	if jl.saving {
-		return nil
-	}
-	switch msg.String() {
-	case "esc":
-		jl.screen = listScreen
-	case "tab", "enter", "down":
-		jl.field = (jl.field + 1) % len(jl.fields)
-	case "shift+tab", "up":
-		jl.field = (jl.field + len(jl.fields) - 1) % len(jl.fields)
-	case "backspace", "ctrl+h":
-		r := []rune(jl.fields[jl.field])
-		if len(r) > 0 {
-			jl.fields[jl.field] = string(r[:len(r)-1])
-		}
-	case "ctrl+s":
-		if jl.save == nil {
-			jl.formError = "Saving is unavailable in this view."
-			return nil
-		}
-		company, position := strings.TrimSpace(jl.fields[0]), strings.TrimSpace(jl.fields[1])
-		if company == "" || position == "" {
-			jl.formError = "Company and position are required."
-			return nil
-		}
-		rank := 0
-		var err error
-		if strings.TrimSpace(jl.fields[3]) != "" {
-			rank, err = strconv.Atoi(strings.TrimSpace(jl.fields[3]))
-		}
-		if err != nil || rank < 0 || rank > 5 {
-			jl.formError = "Ranking must be 1–5, or blank for unranked."
-			return nil
-		}
-		app := model.JobApplication{CompanyName: company, Position: position, Location: strings.TrimSpace(jl.fields[2]), Rank: model.Ranking(rank), Status: model.StatusSubmitted, ApplicationDate: time.Now().UTC()}
-		jl.saving = true
-		jl.formError = ""
-		save := jl.save
-		return func() tea.Msg { stored, err := save(app); return savedMsg{stored, err} }
-	default:
-		if msg.Type == tea.KeyRunes {
-			jl.fields[jl.field] += plain(string(msg.Runes))
-		}
-		if msg.Type == tea.KeySpace {
-			jl.fields[jl.field] += " "
-		}
-	}
-	return nil
-}
-
-func (jl *JobList) formView() string {
-	names := []string{"Company *", "Position *", "Location", "Ranking · 1–5"}
-	var lines []string
-	lines = append(lines, muted.Render("Defaults: submitted · today’s date"), "")
-	for i, name := range names {
-		marker := "  "
-		if i == jl.field {
-			marker = "› "
-		}
-		value := jl.fields[i]
-		if i == jl.field {
-			value += "▏"
-		}
-		lines = append(lines, label.Render(marker+name), "  "+ansi.TruncateLeft(value, max(0, lipgloss.Width(value)-max(1, jl.contentWidth()-3)), "…"), "")
-	}
-	if jl.saving {
-		lines = append(lines, accent.Render("Saving…"))
-	}
-	if jl.formError != "" {
-		lines = append(lines, ansi.Hardwrap(plain(jl.formError), jl.contentWidth(), true))
-	}
-	// Keep the active field visible when a short terminal cannot fit the form.
-	start := 0
-	h := max(1, jl.height-8)
-	if len(lines) > h {
-		start = min(max(0, 2+jl.field*3-h+3), len(lines)-h)
-		if jl.formError != "" {
-			start = len(lines) - h
-		}
-	}
-	return strings.Join(lines[start:min(len(lines), start+h)], "\n")
 }
 
 func (jl *JobList) View() string {
@@ -363,10 +280,16 @@ func (jl *JobList) View() string {
 	}
 	if jl.screen == addScreen {
 		title = "New application"
-		subtitle = "Start with the essentials"
-		toolbar = "COMPANY → POSITION → LOCATION → RANKING"
+		subtitle = fmt.Sprintf("Field %d of %d · * required", jl.field+1, fieldCount)
+		toolbar = formFields[jl.field].hint
+		if jl.formError != "" {
+			toolbar = "Error: " + jl.formError
+		}
+		if jl.saving {
+			toolbar = "Saving…"
+		}
 		body = jl.formView()
-		help = "tab next   ctrl+s save   esc cancel"
+		help = "tab next   ctrl+s save   esc discard"
 	}
 	if jl.control != noControl && jl.screen == listScreen {
 		body = jl.controlView(h)
@@ -388,7 +311,7 @@ func (jl *JobList) View() string {
 		help = "j/k scroll esc back q"
 	}
 	if w < 36 && jl.screen == addScreen {
-		help = "tab next ^s save esc"
+		help = "tab ^s save esc discard"
 	}
 	if w < 36 && jl.control != noControl {
 		help = "↵ apply  esc cancel"
