@@ -170,6 +170,10 @@ gofmt -w ./cmd ./internal # task fmt: apply formatting
 All checks share scripts/check.sh. GitHub Actions runs its `all` mode, builds
 Jobit, and runs race tests on macOS and Linux for every push and pull
 request. It uses go.mod for Go setup, CGO_ENABLED=1, and build-essential on Linux.
+The executable integration tests also use the `script` terminal utility, which
+is available on macOS and in Ubuntu's util-linux package. They build Jobit,
+launch a real TUI in an isolated home directory, create/edit/delete a record,
+restart it, check existing database layouts, and exercise flags and CSV export.
 
 Enable the versioned local hook after each fresh clone:
 
