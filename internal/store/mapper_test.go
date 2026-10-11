@@ -77,7 +77,11 @@ func TestSchemaAndMappingSmoke(t *testing.T) {
 		t.Fatalf("reading error while scan: %v", err)
 	}
 
-	if !got.toModel().JobApplication.Equal(app) {
+	mapped, err := got.toModel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !mapped.JobApplication.Equal(app) {
 		t.Fatalf("Application mismatch")
 	}
 }

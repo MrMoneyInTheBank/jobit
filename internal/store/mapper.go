@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
@@ -123,11 +124,15 @@ func (b boundJobApplication) updateArgs() []any {
 	}
 }
 
-func (b boundJobApplication) toModel() model.StoredJobApplication {
+func (b boundJobApplication) toModel() (model.StoredJobApplication, error) {
+	date, err := time.Parse("2006-01-02", b.applicationDate)
+	if err != nil {
+		return model.StoredJobApplication{}, fmt.Errorf("application %d: invalid application date %q: %w", b.id, b.applicationDate, err)
+	}
 	app := model.JobApplication{
 		CompanyName:     b.companyName,
 		Position:        b.position,
-		ApplicationDate: parseTimeString(b.applicationDate),
+		ApplicationDate: date,
 		Status:          model.Status(b.status),
 		Referral:        b.referral,
 	}
@@ -174,13 +179,5 @@ func (b boundJobApplication) toModel() model.StoredJobApplication {
 		app.CompanyWebsiteLink = b.companyWebsiteLink.String
 	}
 
-	return model.StoredJobApplication{ID: b.id, JobApplication: app}
-}
-
-func parseTimeString(applicationDate string) time.Time {
-	res, err := time.Parse("2006-01-02", applicationDate)
-	if err != nil {
-		panic(err)
-	}
-	return res
+	return model.StoredJobApplication{ID: b.id, JobApplication: app}, nil
 }

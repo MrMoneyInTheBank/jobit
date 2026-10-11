@@ -96,7 +96,11 @@ func GetJobApplications(db *sql.DB) ([]model.StoredJobApplication, error) {
 		if err != nil {
 			return nil, err
 		}
-		got = append(got, app.toModel())
+		mapped, err := app.toModel()
+		if err != nil {
+			return nil, err
+		}
+		got = append(got, mapped)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -131,7 +135,10 @@ func GetJobApplicationByID(db *sql.DB, id int64) (*model.StoredJobApplication, e
 		return nil, err
 	}
 
-	res := got.toModel()
+	res, err := got.toModel()
+	if err != nil {
+		return nil, err
+	}
 
 	return &res, nil
 }
