@@ -24,3 +24,102 @@ The goal is to replace spreadsheets or Notion with a tool that lives entirely in
 ## Status
 
 Early development.
+
+## Run and develop
+
+Use Go 1.25.6 (the version in go.mod), Git, and a C compiler. SQLite uses
+github.com/mattn/go-sqlite3 with CGO; its default build bundles SQLite, so no
+separate SQLite library installation is needed.
+
+- macOS: install Xcode Command Line Tools with `xcode-select --install`.
+- Ubuntu/Debian: install `build-essential`.
+- Set `CGO_ENABLED=1` for Go builds, tests, and vet. The tasks and check script
+  set this explicitly.
+
+From the repository root:
+
+```sh
+CGO_ENABLED=1 go run ./cmd/jobit
+```
+
+The default database is `./jobit.db`, relative to the working directory.
+`JOBIT_DB_DSN` overrides it, for example
+`JOBIT_DB_DSN=./dev.db CGO_ENABLED=1 go run ./cmd/jobit`.
+An explicit nonempty DSN passed to store.OpenDB takes precedence over the
+environment. Tests explicitly use `:memory:` to avoid touching local data.
+
+With Task v3 installed, `task run-dev` runs that same command and
+`task run-prod` builds `bin/jobit` and runs it with the same database rules.
+`task seed` (or `CGO_ENABLED=1 go run ./cmd/seed`) appends 50 sample applications
+to the selected database. Use a separate development database when seeding.
+
+The startup path is: cmd/jobit opens and initializes SQLite, reads applications
+through the store mapper, constructs table rows, and starts Bubble Tea.
+cmd/seed uses the same database selection and schema, then inserts sample rows.
+The schema stores pay in separate nullable min/max/currency columns.
+
+## Keyboard contract
+
+These are the intended bindings across screens. Currently only the list,
+its table navigation, and quit are implemented; sort, filter, details, and
+forms remain planned.
+
+| Action | Keys | Screen / behavior |
+| --- | --- | --- |
+| Move selection | Up/Down or k/j | Lists and selection menus |
+| Page navigation | PageUp/PageDown | Lists |
+| First/last row | Home/End or g/G | Lists |
+| Sort | s | Open sort selection; Enter applies |
+| Filter | / | Open filter input; Enter applies |
+| Clear filter | Esc | List with an active filter |
+| Details | Enter | Open selected application |
+| Add / edit | a / e | Open form from list / details |
+| Next / previous field | Tab / Shift+Tab | Forms |
+| Submit form | Ctrl+S | Save; Enter stays available for fields |
+| Cancel / back | Esc | Close input/menu or return to previous screen |
+| Quit | q | List and details, outside text inputs |
+| Quit anywhere | Ctrl+C | All screens |
+
+At the root list Esc is a no-op when no filter is active. Printable keys,
+including q, j, and k, enter text in input fields.
+
+## Formatting, lint, and tests
+
+The chosen lint command is `go vet ./...`. Formatting is checked with
+`gofmt -l ./cmd ./internal`; any output fails the check.
+
+```sh
+sh scripts/check.sh fmt   # task fmt-check
+sh scripts/check.sh lint  # task lint
+sh scripts/check.sh test  # task test
+sh scripts/check.sh all   # task check: runs all three, reports failure if any fail
+gofmt -w ./cmd ./internal # task fmt: apply formatting
+```
+
+All checks share scripts/check.sh. GitHub Actions runs its `all` mode on every
+push and pull request, using go.mod for Go setup, CGO_ENABLED=1, and
+build-essential for the C compiler.
+
+Enable the versioned local hook after each fresh clone:
+
+```sh
+git config --local core.hooksPath .githooks
+# or: task hooks
+```
+
+This replaces any existing hooksPath setting for this clone. The pre-commit
+hook runs the same formatting and lint checks when staged Go files, go.mod,
+or go.sum change. It checks an isolated copy of the staged snapshot, so
+unstaged fixes cannot conceal problems in a commit. It never reformats or
+stages files. Run the full check command before pushing; CI also runs tests.
+
+## Current verification baseline
+
+The store and TUI use StoredJobApplication to carry database identity alongside
+the application data. Rank 0 maps to SQL NULL (unranked). Pay remains structured
+in nullable columns; patches can clear pay and optional strings.
+
+Local verification on macOS used Go 1.25.6, CGO_ENABLED=1, /usr/bin/clang,
+and the Command Line Tools MacOSX15.0 SDK. The sandbox disallowed the normal
+Go build cache, so checks used `GOCACHE=/tmp/jobit-go-cache`. This is a sandbox
+workaround, not a SQLite requirement. Formatting, tests, and vet pass using the shared check script.
