@@ -23,6 +23,7 @@ func controlJobs() []model.StoredJobApplication {
 	result[2].JobApplication.Status = model.StatusInterviewing
 	return result
 }
+
 func visibleIDs(j *JobList) []int64 {
 	ids := []int64{}
 	for _, i := range j.visible {
@@ -30,6 +31,7 @@ func visibleIDs(j *JobList) []int64 {
 	}
 	return ids
 }
+
 func TestSortDeterminismAndSelection(t *testing.T) {
 	original := controlJobs()
 	j := InitJobList(original)
@@ -56,6 +58,7 @@ func TestSortDeterminismAndSelection(t *testing.T) {
 		t.Fatal("sort mutated source records")
 	}
 }
+
 func TestFilterApplyCancelAndCombinedSort(t *testing.T) {
 	j := InitJobList(controlJobs())
 	j.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
@@ -94,6 +97,7 @@ func TestFilterApplyCancelAndCombinedSort(t *testing.T) {
 		t.Fatal("clear lost selection")
 	}
 }
+
 func TestNoMatchesAndEmptyControls(t *testing.T) {
 	for _, jobs := range [][]model.StoredJobApplication{nil, controlJobs()} {
 		j := InitJobList(jobs)
@@ -116,6 +120,7 @@ func TestNoMatchesAndEmptyControls(t *testing.T) {
 		}
 	}
 }
+
 func TestSavedRowRespectsFilters(t *testing.T) {
 	j := InitJobList(controlJobs())
 	j.query = "Acme"

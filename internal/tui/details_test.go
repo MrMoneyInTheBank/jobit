@@ -52,8 +52,8 @@ func TestDetailsMissingAndPartialValues(t *testing.T) {
 		{nil, "Unknown"}, {&model.Pay{}, "Unknown"}, {&model.Pay{Min: &zero}, "0+"},
 		{&model.Pay{Max: &maximum}, "<= 200"}, {&model.Pay{Currency: &currency}, "USD Unknown"},
 	} {
-		got := ansi.Strip(detailsContent(model.StoredJobApplication{JobApplication: model.JobApplication{Pay: tc.pay}}, 80))
-		if !strings.Contains(got, "Pay\n"+tc.want) {
+		actual := ansi.Strip(detailsContent(model.StoredJobApplication{JobApplication: model.JobApplication{Pay: tc.pay}}, 80))
+		if !strings.Contains(actual, "Pay\n"+tc.want) {
 			t.Errorf("missing partial pay %q", tc.want)
 		}
 	}

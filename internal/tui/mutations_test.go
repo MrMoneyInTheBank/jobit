@@ -79,12 +79,12 @@ func TestEditDeletePersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := store.GetJobApplicationByID(db, id)
+	actual, err := store.GetJobApplicationByID(db, id)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.JobApplication.Status != model.StatusInterviewing || got.JobApplication.Position != "Senior engineer" || got.JobApplication.Pay != nil || got.JobApplication.Notes != "" {
-		t.Fatalf("update not persisted: %+v", got)
+	if actual.JobApplication.Status != model.StatusInterviewing || actual.JobApplication.Position != "Senior engineer" || actual.JobApplication.Pay != nil || actual.JobApplication.Notes != "" {
+		t.Fatalf("update not persisted: %+v", actual)
 	}
 	key(&j, "d")
 	if j.screen != deleteScreen {

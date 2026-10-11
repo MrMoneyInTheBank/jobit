@@ -54,268 +54,289 @@ var formFields = [fieldCount]formField{
 }
 
 func defaultFields() [fieldCount]string {
-	var f [fieldCount]string
-	f[dateField] = time.Now().UTC().Format("2006-01-02")
-	f[statusField] = string(model.StatusSubmitted)
-	f[referralField] = "no"
-	return f
+	var values [fieldCount]string
+	values[dateField] = time.Now().UTC().Format("2006-01-02")
+	values[statusField] = string(model.StatusSubmitted)
+	values[referralField] = "no"
+	return values
 }
 
 func applicationFromFields(fields [fieldCount]string) (model.JobApplication, int, error) {
-	f := fields
-	for i := range f {
-		f[i] = strings.TrimSpace(f[i])
+	values := fields
+	for fieldIndex := range values {
+		values[fieldIndex] = strings.TrimSpace(values[fieldIndex])
 	}
-	fail := func(i int, message string) (model.JobApplication, int, error) {
-		return model.JobApplication{}, i, fmt.Errorf("%s", message)
+
+	fail := func(fieldIndex int, message string) (model.JobApplication, int, error) {
+		return model.JobApplication{}, fieldIndex, fmt.Errorf("%s", message)
 	}
-	if f[companyField] == "" {
+	if values[companyField] == "" {
 		return fail(companyField, "Company is required")
 	}
-	if f[positionField] == "" {
+	if values[positionField] == "" {
 		return fail(positionField, "Position is required")
 	}
-	date, err := time.Parse("2006-01-02", f[dateField])
-	if err != nil || date.IsZero() {
+	applicationDate, err := time.Parse("2006-01-02", values[dateField])
+	if err != nil || applicationDate.IsZero() {
 		return fail(dateField, "Use a valid date: YYYY-MM-DD")
 	}
-	status := strings.ToLower(f[statusField])
+	status := strings.ToLower(values[statusField])
 	if !contains(formFields[statusField].choices, status) {
 		return fail(statusField, "Choose a valid application status")
 	}
-	referral := strings.ToLower(f[referralField])
+	referral := strings.ToLower(values[referralField])
 	if !contains(formFields[referralField].choices, referral) {
 		return fail(referralField, "Referral must be yes or no")
 	}
-	mode := strings.ToLower(f[modeField])
-	if !contains(formFields[modeField].choices, mode) {
+	workMode := strings.ToLower(values[modeField])
+	if !contains(formFields[modeField].choices, workMode) {
 		return fail(modeField, "Work mode must be remote, hybrid, onsite, or blank")
 	}
-	rank, err := strconv.Atoi(f[rankField])
+	rank, err := strconv.Atoi(values[rankField])
 	if err != nil || !model.Ranking(rank).Valid() {
 		return fail(rankField, "Ranking must be 1–5")
 	}
 	var pay model.Pay
-	for _, i := range []int{minField, maxField} {
-		if f[i] == "" {
+	for _, fieldIndex := range []int{minField, maxField} {
+		if values[fieldIndex] == "" {
 			continue
 		}
-		v, e := strconv.Atoi(f[i])
-		if e != nil || v < 0 {
-			return fail(i, "Pay must be a nonnegative whole number")
+		amount, parseErr := strconv.Atoi(values[fieldIndex])
+		if parseErr != nil || amount < 0 {
+			return fail(fieldIndex, "Pay must be a nonnegative whole number")
 		}
-		if i == minField {
-			pay.Min = &v
+		if fieldIndex == minField {
+			pay.Min = &amount
 		} else {
-			pay.Max = &v
+			pay.Max = &amount
 		}
 	}
 	if pay.Min != nil && pay.Max != nil && *pay.Min > *pay.Max {
 		return fail(maxField, "Maximum pay must be at least minimum pay")
 	}
-	if f[currencyField] != "" {
-		currency := strings.ToUpper(f[currencyField])
+	if values[currencyField] != "" {
+		currency := strings.ToUpper(values[currencyField])
 		if len(currency) != 3 {
 			return fail(currencyField, "Use a 3-letter currency code")
 		}
-		for _, r := range currency {
-			if r < 'A' || r > 'Z' {
+		for _, character := range currency {
+			if character < 'A' || character > 'Z' {
 				return fail(currencyField, "Use a 3-letter currency code")
 			}
 		}
 		pay.Currency = &currency
 	}
-	for _, i := range []int{postingField, websiteField} {
-		if f[i] == "" {
+	for _, fieldIndex := range []int{postingField, websiteField} {
+		if values[fieldIndex] == "" {
 			continue
 		}
-		u, err := url.ParseRequestURI(f[i])
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
-			return fail(i, "Use a full http:// or https:// URL")
+		parsedURL, err := url.ParseRequestURI(values[fieldIndex])
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Hostname() == "" {
+			return fail(fieldIndex, "Use a full http:// or https:// URL")
 		}
 	}
-	app := model.JobApplication{CompanyName: f[companyField], Position: f[positionField], Location: f[locationField], Rank: model.Ranking(rank), ApplicationDate: date, Status: model.Status(status), Referral: referral == "yes", WorkMode: model.WorkMode(mode), Notes: f[notesField], JobPostingLink: f[postingField], CompanyWebsiteLink: f[websiteField]}
-	if pay.Min != nil || pay.Max != nil || pay.Currency != nil {
-		app.Pay = &pay
+	application := model.JobApplication{
+		CompanyName:        values[companyField],
+		Position:           values[positionField],
+		Location:           values[locationField],
+		Rank:               model.Ranking(rank),
+		ApplicationDate:    applicationDate,
+		Status:             model.Status(status),
+		Referral:           referral == "yes",
+		WorkMode:           model.WorkMode(workMode),
+		Notes:              values[notesField],
+		JobPostingLink:     values[postingField],
+		CompanyWebsiteLink: values[websiteField],
 	}
-	return app, 0, nil
+	if pay.Min != nil || pay.Max != nil || pay.Currency != nil {
+		application.Pay = &pay
+	}
+	return application, 0, nil
 }
-func contains(values []string, s string) bool {
-	for _, v := range values {
-		if v == s {
+
+func contains(values []string, target string) bool {
+	for _, choice := range values {
+		if choice == target {
 			return true
 		}
 	}
 	return false
 }
 
-func (jl *JobList) moveField(delta int) {
-	jl.field = (jl.field + delta + fieldCount) % fieldCount
-	jl.cursor = len([]rune(jl.fields[jl.field]))
+func (jobList *JobList) moveField(delta int) {
+	jobList.field = (jobList.field + delta + fieldCount) % fieldCount
+	jobList.cursor = len([]rune(jobList.fields[jobList.field]))
 }
-func (jl *JobList) insertText(text string) {
-	if jl.field != notesField {
+
+func (jobList *JobList) insertText(text string) {
+	if jobList.field != notesField {
 		text = plain(text)
 	} else {
 		text = strings.ReplaceAll(text, "\r\n", "\n")
-		text = strings.Map(func(r rune) rune {
-			if r == '\n' || r == '\t' {
-				return r
+		text = strings.Map(func(character rune) rune {
+			if character == '\n' || character == '\t' {
+				return character
 			}
-			if unicode.IsControl(r) {
+			if unicode.IsControl(character) {
 				return -1
 			}
-			return r
+			return character
 		}, ansi.Strip(text))
 	}
-	r := []rune(jl.fields[jl.field])
-	jl.cursor = min(jl.cursor, len(r))
+	currentValue := []rune(jobList.fields[jobList.field])
+	jobList.cursor = min(jobList.cursor, len(currentValue))
 	input := []rune(text)
-	candidate := string(r[:jl.cursor]) + string(input) + string(r[jl.cursor:])
-	if !validTypedValue(jl.field, candidate) {
-		jl.formError = "Input rejected · " + formFields[jl.field].hint
+	candidate := string(currentValue[:jobList.cursor]) + string(input) + string(currentValue[jobList.cursor:])
+	if !validTypedValue(jobList.field, candidate) {
+		jobList.formError = "Input rejected · " + formFields[jobList.field].hint
 		return
 	}
-	jl.fields[jl.field] = candidate
-	jl.formError = ""
-	jl.cursor += len(input)
+	jobList.fields[jobList.field] = candidate
+	jobList.formError = ""
+	jobList.cursor += len(input)
 }
-func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
-	if jl.saving {
+
+func (jobList *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
+	if jobList.saving {
 		return nil
 	}
-	r := []rune(jl.fields[jl.field])
-	jl.cursor = min(jl.cursor, len(r))
+	currentValue := []rune(jobList.fields[jobList.field])
+	jobList.cursor = min(jobList.cursor, len(currentValue))
 	switch msg.String() {
 	case "esc":
-		jl.screen = jl.returnScreen
-		jl.notice = "Draft discarded"
+		jobList.screen = jobList.returnScreen
+		jobList.notice = "Draft discarded"
 	case "tab", "down":
-		jl.moveField(1)
+		jobList.moveField(1)
 	case "shift+tab", "up":
-		jl.moveField(-1)
+		jobList.moveField(-1)
 	case "enter":
-		if jl.field == notesField {
-			jl.insertText("\n")
+		if jobList.field == notesField {
+			jobList.insertText("\n")
 		} else {
-			jl.moveField(1)
+			jobList.moveField(1)
 		}
 	case "left", "right":
-		choices := formFields[jl.field].choices
+		choices := formFields[jobList.field].choices
 		delta := 1
 		if msg.String() == "left" {
 			delta = -1
 		}
 		if len(choices) > 0 {
 			current := 0
-			for i, v := range choices {
-				if v == jl.fields[jl.field] {
-					current = i
+			for index, choice := range choices {
+				if choice == jobList.fields[jobList.field] {
+					current = index
 				}
 			}
-			jl.fields[jl.field] = choices[(current+delta+len(choices))%len(choices)]
-			jl.cursor = len([]rune(jl.fields[jl.field]))
-			jl.formError = ""
+			jobList.fields[jobList.field] = choices[(current+delta+len(choices))%len(choices)]
+			jobList.cursor = len([]rune(jobList.fields[jobList.field]))
+			jobList.formError = ""
 		} else {
-			jl.cursor = max(0, min(len(r), jl.cursor+delta))
+			jobList.cursor = max(0, min(len(currentValue), jobList.cursor+delta))
 		}
 	case "home", "ctrl+a":
-		jl.cursor = 0
+		jobList.cursor = 0
 	case "end", "ctrl+e":
-		jl.cursor = len(r)
+		jobList.cursor = len(currentValue)
 	case "ctrl+u":
-		if choices := formFields[jl.field].choices; len(choices) > 0 {
-			jl.fields[jl.field] = choices[0]
-			jl.cursor = len([]rune(choices[0]))
+		if choices := formFields[jobList.field].choices; len(choices) > 0 {
+			jobList.fields[jobList.field] = choices[0]
+			jobList.cursor = len([]rune(choices[0]))
 		} else {
-			jl.fields[jl.field] = ""
-			jl.cursor = 0
+			jobList.fields[jobList.field] = ""
+			jobList.cursor = 0
 		}
 	case "backspace", "ctrl+h":
-		if len(formFields[jl.field].choices) > 0 {
+		if len(formFields[jobList.field].choices) > 0 {
 			return nil
 		}
-		if jl.cursor > 0 {
-			jl.fields[jl.field] = string(r[:jl.cursor-1]) + string(r[jl.cursor:])
-			jl.cursor--
+		if jobList.cursor > 0 {
+			jobList.fields[jobList.field] = string(currentValue[:jobList.cursor-1]) + string(currentValue[jobList.cursor:])
+			jobList.cursor--
 		}
 	case "delete":
-		if len(formFields[jl.field].choices) > 0 {
+		if len(formFields[jobList.field].choices) > 0 {
 			return nil
 		}
-		if jl.cursor < len(r) {
-			jl.fields[jl.field] = string(r[:jl.cursor]) + string(r[jl.cursor+1:])
+		if jobList.cursor < len(currentValue) {
+			jobList.fields[jobList.field] = string(currentValue[:jobList.cursor]) + string(currentValue[jobList.cursor+1:])
 		}
 	case "ctrl+s":
-		if (jl.editID == 0 && jl.save == nil) || (jl.editID != 0 && jl.update == nil) {
-			jl.formError = "Saving is unavailable in this view"
+		if (jobList.editID == 0 && jobList.save == nil) || (jobList.editID != 0 && jobList.update == nil) {
+			jobList.formError = "Saving is unavailable in this view"
 			return nil
 		}
-		app, field, err := applicationFromFields(jl.fields)
+		application, field, err := applicationFromFields(jobList.fields)
 		if err != nil {
-			jl.formError = err.Error()
-			jl.field = field
-			jl.cursor = len([]rune(jl.fields[field]))
+			jobList.formError = err.Error()
+			jobList.field = field
+			jobList.cursor = len([]rune(jobList.fields[field]))
 			return nil
 		}
-		jl.saving = true
-		jl.formError = ""
-		if jl.editID != 0 {
-			stored := model.StoredJobApplication{ID: jl.editID, JobApplication: app}
-			update := jl.update
-			return func() tea.Msg { return savedMsg{stored, update(stored)} }
+		jobList.saving = true
+		jobList.formError = ""
+		if jobList.editID != 0 {
+			stored := model.StoredJobApplication{ID: jobList.editID, JobApplication: application}
+			update := jobList.update
+			return func() tea.Msg {
+				return savedMsg{stored, update(stored)}
+			}
 		}
-		save := jl.save
-		return func() tea.Msg { stored, err := save(app); return savedMsg{stored, err} }
+		save := jobList.save
+		return func() tea.Msg {
+			stored, err := save(application)
+			return savedMsg{stored, err}
+		}
 	default:
 		if msg.Type == tea.KeyRunes {
-			jl.insertText(string(msg.Runes))
+			jobList.insertText(string(msg.Runes))
 		}
 		if msg.Type == tea.KeySpace {
-			jl.insertText(" ")
+			jobList.insertText(" ")
 		}
 	}
 	return nil
 }
 
-func (jl *JobList) formView() string {
-	w := jl.contentWidth()
-	h := max(1, jl.height-8)
+func (jobList *JobList) formView() string {
+	contentWidth := jobList.contentWidth()
+	contentHeight := max(1, jobList.height-8)
 	var lines []string
-	active := 0
-	for i, f := range formFields {
+	activeLine := 0
+	for fieldIndex, field := range formFields {
 		marker := "  "
-		if i == jl.field {
+		if fieldIndex == jobList.field {
 			marker = "› "
 		}
-		lines = append(lines, label.Render(marker+f.name))
-		value := jl.fields[i]
-		if i == jl.field {
-			r := []rune(value)
-			cursor := min(jl.cursor, len(r))
-			value = string(r[:cursor]) + "▏" + string(r[cursor:])
+		lines = append(lines, label.Render(marker+field.name))
+		value := jobList.fields[fieldIndex]
+		if fieldIndex == jobList.field {
+			characters := []rune(value)
+			cursor := min(jobList.cursor, len(characters))
+			value = string(characters[:cursor]) + "▏" + string(characters[cursor:])
 			// Show the cursor's line even for long notes and narrow terminals.
-			before := ansi.Hardwrap(strings.ReplaceAll(string(r[:cursor]), "\t", "    "), max(1, w-2), true)
-			active = len(lines) + strings.Count(before, "\n")
+			before := ansi.Hardwrap(strings.ReplaceAll(string(characters[:cursor]), "\t", "    "), max(1, contentWidth-2), true)
+			activeLine = len(lines) + strings.Count(before, "\n")
 		} else if value == "" {
 			value = "—"
 		}
-		if len(f.choices) > 0 {
-			value = jl.fields[i]
+		if len(field.choices) > 0 {
+			value = jobList.fields[fieldIndex]
 			if value == "" {
 				value = "Unspecified"
 			}
 			value = "‹ " + value + " ›"
 		}
-		wrapped := ansi.Hardwrap(strings.ReplaceAll(value, "\t", "    "), max(1, w-2), true)
+		wrapped := ansi.Hardwrap(strings.ReplaceAll(value, "\t", "    "), max(1, contentWidth-2), true)
 		for _, line := range strings.Split(wrapped, "\n") {
 			lines = append(lines, "  "+line)
 		}
 		lines = append(lines, "")
 	}
-	start := max(0, active-h/2)
-	start = min(start, max(0, len(lines)-h))
-	return strings.Join(lines[start:min(len(lines), start+h)], "\n")
+	start := max(0, activeLine-contentHeight/2)
+	start = min(start, max(0, len(lines)-contentHeight))
+	return strings.Join(lines[start:min(len(lines), start+contentHeight)], "\n")
 }
 
 // Partial dates and currency codes may be incomplete while editing; saving

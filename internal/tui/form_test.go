@@ -12,12 +12,13 @@ import (
 )
 
 func validFields() [fieldCount]string {
-	f := defaultFields()
-	f[companyField] = " Acme "
-	f[positionField] = " Engineer "
-	f[rankField] = "3"
-	return f
+	fields := defaultFields()
+	fields[companyField] = " Acme "
+	fields[positionField] = " Engineer "
+	fields[rankField] = "3"
+	return fields
 }
+
 func TestFormValidation(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
@@ -33,24 +34,25 @@ func TestFormValidation(t *testing.T) {
 		{"currency length", currencyField, "US"}, {"currency characters", currencyField, "1$!"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f := validFields()
-			f[tc.field] = tc.value
-			_, field, err := applicationFromFields(f)
+			fields := validFields()
+			fields[tc.field] = tc.value
+			_, field, err := applicationFromFields(fields)
 			if err == nil || field != tc.field {
 				t.Fatalf("field=%d error=%v", field, err)
 			}
 		})
 	}
-	f := validFields()
-	f[minField] = "200"
-	f[maxField] = "100"
-	if _, field, err := applicationFromFields(f); err == nil || field != maxField {
+	fields := validFields()
+	fields[minField] = "200"
+	fields[maxField] = "100"
+	if _, field, err := applicationFromFields(fields); err == nil || field != maxField {
 		t.Fatal("inverted pay range accepted")
 	}
 }
+
 func TestFormOptionalValues(t *testing.T) {
-	f := validFields()
-	app, _, err := applicationFromFields(f)
+	fields := validFields()
+	app, _, err := applicationFromFields(fields)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,30 +62,31 @@ func TestFormOptionalValues(t *testing.T) {
 	if app.CompanyName != "Acme" || app.Position != "Engineer" {
 		t.Fatal("required text not trimmed")
 	}
-	f[minField] = "0"
-	f[currencyField] = " usd "
-	app, _, err = applicationFromFields(f)
+	fields[minField] = "0"
+	fields[currencyField] = " usd "
+	app, _, err = applicationFromFields(fields)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if app.Pay.Min == nil || *app.Pay.Min != 0 || app.Pay.Max != nil || *app.Pay.Currency != "USD" {
 		t.Fatal("zero or partial pay lost")
 	}
-	f[minField] = ""
-	f[maxField] = "500"
-	app, _, err = applicationFromFields(f)
+	fields[minField] = ""
+	fields[maxField] = "500"
+	app, _, err = applicationFromFields(fields)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if app.Pay.Min != nil || *app.Pay.Max != 500 {
 		t.Fatal("maximum-only pay lost")
 	}
-	f[maxField] = ""
-	app, _, err = applicationFromFields(f)
+	fields[maxField] = ""
+	app, _, err = applicationFromFields(fields)
 	if err != nil || app.Pay == nil || app.Pay.Currency == nil {
 		t.Fatal("currency-only pay lost")
 	}
 }
+
 func TestFormKeyboardAndSmallScreens(t *testing.T) {
 	j := InitJobList(nil)
 	key(&j, "a")
@@ -139,6 +142,7 @@ func TestFormKeyboardAndSmallScreens(t *testing.T) {
 		}
 	}
 }
+
 func TestFullFormPersistence(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "applications.db")
 	db, err := store.OpenDB(&path)

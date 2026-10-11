@@ -41,15 +41,15 @@ func TestRejectInvalidTyping(t *testing.T) {
 			t.Fatalf("accepted invalid field %d: %s", tc.field, tc.value)
 		}
 	}
-	f := validFields()
+	fields := validFields()
 	for _, field := range []int{postingField, websiteField} {
-		f[field] = "javascript:alert(1)"
-		if _, _, err := applicationFromFields(f); err == nil {
+		fields[field] = "javascript:alert(1)"
+		if _, _, err := applicationFromFields(fields); err == nil {
 			t.Fatal("accepted invalid URL")
 		}
-		f[field] = "https://example.com/job"
+		fields[field] = "https://example.com/job"
 	}
-	if _, _, err := applicationFromFields(f); err != nil {
+	if _, _, err := applicationFromFields(fields); err != nil {
 		t.Fatal(err)
 	}
 }

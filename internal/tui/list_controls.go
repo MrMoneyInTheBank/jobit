@@ -31,149 +31,159 @@ var sortChoices = []sortChoice{
 }
 var statuses = []model.Status{"", model.StatusSubmitted, model.StatusInterviewing, model.StatusOffer, model.StatusRejected, model.StatusAccepted}
 
-func (jl *JobList) selectedID() int64 {
-	if s := jl.selected(); s != nil {
-		return s.ID
+func (jobList *JobList) selectedID() int64 {
+	if selected := jobList.selected(); selected != nil {
+		return selected.ID
 	}
 	return 0
 }
-func (jl *JobList) hasFilter() bool { return jl.query != "" || jl.status != "" }
-func (jl *JobList) rebuild(preferred int64) {
-	jl.visible = nil
-	query := strings.ToLower(strings.TrimSpace(jl.query))
-	for i, stored := range jl.jobs {
-		j := stored.JobApplication
-		if jl.status != "" && j.Status != jl.status {
+
+func (jobList *JobList) hasFilter() bool {
+	return jobList.query != "" || jobList.status != ""
+}
+
+func (jobList *JobList) rebuild(preferredID int64) {
+	jobList.visible = nil
+	query := strings.ToLower(strings.TrimSpace(jobList.query))
+	for index, stored := range jobList.jobs {
+		application := stored.JobApplication
+		if jobList.status != "" && application.Status != jobList.status {
 			continue
 		}
-		haystack := strings.ToLower(strings.Join([]string{j.CompanyName, j.Position, j.Location, j.Notes}, " "))
+		haystack := strings.ToLower(strings.Join([]string{
+			application.CompanyName, application.Position, application.Location, application.Notes,
+		}, " "))
 		if query != "" && !strings.Contains(haystack, query) {
 			continue
 		}
-		jl.visible = append(jl.visible, i)
+		jobList.visible = append(jobList.visible, index)
 	}
-	choice := sortChoices[jl.sortIndex]
-	sort.SliceStable(jl.visible, func(i, k int) bool {
-		a, b := jl.jobs[jl.visible[i]], jl.jobs[jl.visible[k]]
+
+	choice := sortChoices[jobList.sortIndex]
+	sort.SliceStable(jobList.visible, func(leftIndex, rightIndex int) bool {
+		left := jobList.jobs[jobList.visible[leftIndex]]
+		right := jobList.jobs[jobList.visible[rightIndex]]
 		var comparison int
-		var av, bv string
+		var leftValue, rightValue string
 		switch choice.field {
 		case "Added":
-			comparison = cmp.Compare(a.ID, b.ID)
+			comparison = cmp.Compare(left.ID, right.ID)
 		case "Company":
-			av, bv = a.JobApplication.CompanyName, b.JobApplication.CompanyName
+			leftValue, rightValue = left.JobApplication.CompanyName, right.JobApplication.CompanyName
 		case "Position":
-			av, bv = a.JobApplication.Position, b.JobApplication.Position
+			leftValue, rightValue = left.JobApplication.Position, right.JobApplication.Position
 		case "Location":
-			av, bv = a.JobApplication.Location, b.JobApplication.Location
+			leftValue, rightValue = left.JobApplication.Location, right.JobApplication.Location
 		case "Ranking":
-			ar, br := a.JobApplication.Rank, b.JobApplication.Rank
-			comparison = cmp.Compare(ar, br)
+			comparison = cmp.Compare(left.JobApplication.Rank, right.JobApplication.Rank)
 		}
 		if choice.field != "Added" && choice.field != "Ranking" {
-			av, bv = strings.ToLower(strings.TrimSpace(av)), strings.ToLower(strings.TrimSpace(bv))
-			if (av == "") != (bv == "") {
-				return av != ""
+			leftValue = strings.ToLower(strings.TrimSpace(leftValue))
+			rightValue = strings.ToLower(strings.TrimSpace(rightValue))
+			if (leftValue == "") != (rightValue == "") {
+				return leftValue != ""
 			}
-			comparison = strings.Compare(av, bv)
+			comparison = strings.Compare(leftValue, rightValue)
 		}
 		if comparison == 0 {
-			return a.ID < b.ID
+			return left.ID < right.ID
 		}
-		if jl.sortIndex%2 == 1 {
+		if jobList.sortIndex%2 == 1 {
 			return comparison > 0
 		}
 		return comparison < 0
 	})
-	rows := make([]table.Row, len(jl.visible))
+
+	rows := make([]table.Row, len(jobList.visible))
 	cursor := 0
-	for i, index := range jl.visible {
-		rows[i] = constructRow(jl.jobs[index])
-		if jl.jobs[index].ID == preferred {
-			cursor = i
+	for index, jobIndex := range jobList.visible {
+		rows[index] = constructRow(jobList.jobs[jobIndex])
+		if jobList.jobs[jobIndex].ID == preferredID {
+			cursor = index
 		}
 	}
-	jl.JobsTable.SetRows(rows)
-	jl.JobsTable.SetCursor(cursor)
-	jl.markSelection()
+	jobList.JobsTable.SetRows(rows)
+	jobList.JobsTable.SetCursor(cursor)
+	jobList.markSelection()
 }
 
-func (jl *JobList) updateControl(msg tea.KeyMsg) {
+func (jobList *JobList) updateControl(msg tea.KeyMsg) {
 	switch msg.String() {
 	case "esc":
-		jl.control = noControl
+		jobList.control = noControl
 		return
 	case "enter":
-		id := jl.selectedID()
-		if jl.control == sortControl {
-			jl.sortIndex = jl.sortDraft
+		id := jobList.selectedID()
+		if jobList.control == sortControl {
+			jobList.sortIndex = jobList.sortDraft
 		} else {
-			jl.query = strings.TrimSpace(jl.queryDraft)
-			jl.status = statuses[jl.statusDraft]
+			jobList.query = strings.TrimSpace(jobList.queryDraft)
+			jobList.status = statuses[jobList.statusDraft]
 		}
-		jl.control = noControl
-		jl.notice = ""
-		jl.rebuild(id)
+		jobList.control = noControl
+		jobList.notice = ""
+		jobList.rebuild(id)
 		return
 	}
-	if jl.control == sortControl {
+	if jobList.control == sortControl {
 		switch msg.String() {
 		case "j", "down", "tab":
-			jl.sortDraft = (jl.sortDraft + 1) % len(sortChoices)
+			jobList.sortDraft = (jobList.sortDraft + 1) % len(sortChoices)
 		case "k", "up", "shift+tab":
-			jl.sortDraft = (jl.sortDraft + len(sortChoices) - 1) % len(sortChoices)
+			jobList.sortDraft = (jobList.sortDraft + len(sortChoices) - 1) % len(sortChoices)
 		case "g", "home":
-			jl.sortDraft = 0
+			jobList.sortDraft = 0
 		case "G", "end":
-			jl.sortDraft = len(sortChoices) - 1
+			jobList.sortDraft = len(sortChoices) - 1
 		}
 		return
 	}
 	switch msg.String() {
 	case "tab", "right":
-		jl.statusDraft = (jl.statusDraft + 1) % len(statuses)
+		jobList.statusDraft = (jobList.statusDraft + 1) % len(statuses)
 	case "shift+tab", "left":
-		jl.statusDraft = (jl.statusDraft + len(statuses) - 1) % len(statuses)
+		jobList.statusDraft = (jobList.statusDraft + len(statuses) - 1) % len(statuses)
 	case "backspace", "ctrl+h":
-		r := []rune(jl.queryDraft)
+		r := []rune(jobList.queryDraft)
 		if len(r) > 0 {
-			jl.queryDraft = string(r[:len(r)-1])
+			jobList.queryDraft = string(r[:len(r)-1])
 		}
 	case "ctrl+u":
-		jl.queryDraft = ""
+		jobList.queryDraft = ""
 	default:
 		if msg.Type == tea.KeyRunes {
-			jl.queryDraft += plain(string(msg.Runes))
+			jobList.queryDraft += plain(string(msg.Runes))
 		}
 		if msg.Type == tea.KeySpace {
-			jl.queryDraft += " "
+			jobList.queryDraft += " "
 		}
 	}
 }
-func (jl *JobList) controlView(height int) string {
-	if jl.control == filterControl {
-		status := string(statuses[jl.statusDraft])
+
+func (jobList *JobList) controlView(height int) string {
+	if jobList.control == filterControl {
+		status := string(statuses[jobList.statusDraft])
 		if status == "" {
 			status = "All statuses"
 		}
-		query := jl.queryDraft + "▏"
-		query = ansi.TruncateLeft(query, max(0, ansi.StringWidth(query)-jl.contentWidth()+3), "…")
+		query := jobList.queryDraft + "▏"
+		query = ansi.TruncateLeft(query, max(0, ansi.StringWidth(query)-jobList.contentWidth()+3), "…")
 		if height < 7 {
 			return strings.Join([]string{query, label.Render("Status: " + status), muted.Render("Tab status · Enter apply")}, "\n")
 		}
 		return strings.Join([]string{accent.Render("Find an application"), "", label.Render("Search company, position, location, or notes"), query, "", label.Render("Status  ‹ " + status + " ›"), muted.Render("Tab cycles status · Ctrl+U clears search")}, "\n")
 	}
 	lines := []string{}
-	start := max(0, jl.sortDraft-max(1, height-2)/2)
+	start := max(0, jobList.sortDraft-max(1, height-2)/2)
 	start = min(start, max(0, len(sortChoices)-height))
 	for i := start; i < min(len(sortChoices), start+height); i++ {
 		c := sortChoices[i]
 		marker := "  "
-		if i == jl.sortDraft {
+		if i == jobList.sortDraft {
 			marker = "› "
 		}
 		value := fmt.Sprintf("%s%-10s %s", marker, c.field, c.direction)
-		if i == jl.sortDraft {
+		if i == jobList.sortDraft {
 			value = accent.Render(value)
 		}
 		lines = append(lines, value)
@@ -182,14 +192,14 @@ func (jl *JobList) controlView(height int) string {
 }
 
 // Keep selection identifiable even when terminal colors are disabled.
-func (jl *JobList) markSelection() {
-	rows := jl.JobsTable.Rows()
-	for i, index := range jl.visible {
+func (jobList *JobList) markSelection() {
+	rows := jobList.JobsTable.Rows()
+	for i, index := range jobList.visible {
 		prefix := "  "
-		if i == jl.JobsTable.Cursor() {
+		if i == jobList.JobsTable.Cursor() {
 			prefix = "› "
 		}
-		rows[i][0] = prefix + plain(jl.jobs[index].JobApplication.CompanyName)
+		rows[i][0] = prefix + plain(jobList.jobs[index].JobApplication.CompanyName)
 	}
-	jl.JobsTable.SetRows(rows)
+	jobList.JobsTable.SetRows(rows)
 }

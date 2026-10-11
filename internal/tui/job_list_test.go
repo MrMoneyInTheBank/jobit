@@ -19,6 +19,7 @@ func fixture() []model.StoredJobApplication {
 	}
 	return jobs
 }
+
 func key(j *JobList, k string) tea.Cmd {
 	special := map[string]tea.KeyType{"enter": tea.KeyEnter, "esc": tea.KeyEsc, "tab": tea.KeyTab, "ctrl+s": tea.KeyCtrlS, "ctrl+c": tea.KeyCtrlC}
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)}
@@ -28,6 +29,7 @@ func key(j *JobList, k string) tea.Cmd {
 	_, cmd := j.Update(msg)
 	return cmd
 }
+
 func TestNavigationDetailsAndResize(t *testing.T) {
 	j := InitJobList(fixture())
 	j.Update(tea.WindowSizeMsg{Width: 90, Height: 24})
@@ -69,6 +71,7 @@ func TestNavigationDetailsAndResize(t *testing.T) {
 		t.Fatal("q did not quit")
 	}
 }
+
 func TestDetailsContainEveryField(t *testing.T) {
 	jobs := fixture()[:1]
 	a := &jobs[0].JobApplication
@@ -91,6 +94,7 @@ func TestDetailsContainEveryField(t *testing.T) {
 		}
 	}
 }
+
 func TestListColumnsAndBounds(t *testing.T) {
 	jobs := fixture()
 	jobs[0].JobApplication.CompanyName = strings.Repeat("会社", 100) + "\n\x1b[31m"
@@ -109,6 +113,7 @@ func TestListColumnsAndBounds(t *testing.T) {
 		}
 	}
 }
+
 func TestEmptyAndForm(t *testing.T) {
 	var saved model.JobApplication
 	j := InitJobList(nil, func(a model.JobApplication) (model.StoredJobApplication, error) {
@@ -159,6 +164,7 @@ func TestEmptyAndForm(t *testing.T) {
 		t.Fatal("new row not selected")
 	}
 }
+
 func TestSaveFailureRetainsInput(t *testing.T) {
 	j := InitJobList(fixture(), func(model.JobApplication) (model.StoredJobApplication, error) {
 		return model.StoredJobApplication{}, errors.New("database locked")

@@ -64,372 +64,387 @@ var (
 	label  = lipgloss.NewStyle().Foreground(lipgloss.Color("110"))
 )
 
-func (jl *JobList) Init() tea.Cmd { return tea.SetWindowTitle("Jobit · Applications") }
+func (jobList *JobList) Init() tea.Cmd {
+	return tea.SetWindowTitle("Jobit · Applications")
+}
 
 // plain prevents stored control characters from affecting terminal rendering.
-func plain(s string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) {
+func plain(value string) string {
+	return strings.Map(func(character rune) rune {
+		if unicode.IsControl(character) {
 			return ' '
 		}
-		return r
-	}, ansi.Strip(s))
+		return character
+	}, ansi.Strip(value))
 }
-func optional(s string) string {
-	if s == "" {
+
+func optional(value string) string {
+	if value == "" {
 		return "—"
 	}
-	return plain(s)
+	return plain(value)
 }
-func ranking(r model.Ranking) string {
-	return strconv.Itoa(int(r)) + "/5"
+
+func ranking(rank model.Ranking) string {
+	return strconv.Itoa(int(rank)) + "/5"
 }
+
 func constructRow(stored model.StoredJobApplication) table.Row {
-	j := stored.JobApplication
-	return table.Row{plain(j.CompanyName), plain(j.Position), optional(j.Location), ranking(j.Rank)}
+	application := stored.JobApplication
+	return table.Row{
+		plain(application.CompanyName), plain(application.Position),
+		optional(application.Location), ranking(application.Rank),
+	}
 }
 
 // The optional save callback keeps persistence outside the view model.
 func InitJobList(jobs []model.StoredJobApplication, save ...SaveApplication) JobList {
 	rows := make([]table.Row, len(jobs))
-	for i, j := range jobs {
-		rows[i] = constructRow(j)
+	for index, application := range jobs {
+		rows[index] = constructRow(application)
 	}
 	styles := table.DefaultStyles()
 	styles.Header = lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Padding(0, 1)
 	styles.Cell = lipgloss.NewStyle().Padding(0, 1)
 	styles.Selected = lipgloss.NewStyle().Foreground(lipgloss.Color("230")).Background(lipgloss.Color("24")).Bold(true)
-	t := table.New(table.WithColumns(columns(72)), table.WithRows(rows), table.WithFocused(true), table.WithStyles(styles), table.WithHeight(10))
-	jl := JobList{JobsTable: t, jobs: append([]model.StoredJobApplication(nil), jobs...), details: viewport.New(72, 10)}
+	jobTable := table.New(table.WithColumns(columns(72)), table.WithRows(rows), table.WithFocused(true), table.WithStyles(styles), table.WithHeight(10))
+	jobList := JobList{JobsTable: jobTable, jobs: append([]model.StoredJobApplication(nil), jobs...), details: viewport.New(72, 10)}
 	if len(save) > 0 {
-		jl.save = save[0]
+		jobList.save = save[0]
 	}
-	jl.rebuild(0)
-	return jl
+	jobList.rebuild(0)
+	return jobList
 }
 
 func columns(width int) []table.Column {
 	available := max(4, width-8) // Two padding cells per column.
 	rank := min(7, max(1, available/5))
-	rest := available - rank
-	company := max(1, rest*30/100)
-	position := max(1, rest*42/100)
-	location := max(1, rest-company-position)
+	remaining := available - rank
+	company := max(1, remaining*30/100)
+	position := max(1, remaining*42/100)
+	location := max(1, remaining-company-position)
 	titles := []string{"Company", "Position", "Location", "Ranking"}
 	if width < 48 {
 		titles = []string{"Co.", "Role", "Place", "Rank"}
 	}
 	return []table.Column{{Title: titles[0], Width: company}, {Title: titles[1], Width: position}, {Title: titles[2], Width: location}, {Title: titles[3], Width: rank}}
 }
-func (jl *JobList) contentWidth() int { return max(1, min(112, jl.width-4)) }
-func (jl *JobList) resize() {
-	w := jl.contentWidth()
-	h := max(1, jl.height-8)
-	jl.JobsTable.SetColumns(columns(w))
-	jl.JobsTable.SetWidth(w)
-	jl.JobsTable.SetHeight(h)
-	progress := jl.details.ScrollPercent()
-	jl.details.Width = w
-	jl.details.Height = h
-	if jl.screen == detailsScreen {
-		jl.setDetails()
-		jl.details.SetYOffset(int(progress * float64(max(0, jl.details.TotalLineCount()-jl.details.Height))))
-	}
-}
-func (jl *JobList) selected() *model.StoredJobApplication {
-	i := jl.JobsTable.Cursor()
-	if i < 0 || i >= len(jl.visible) {
-		return nil
-	}
-	return &jl.jobs[jl.visible[i]]
+
+func (jobList *JobList) contentWidth() int {
+	return max(1, min(112, jobList.width-4))
 }
 
-func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (jobList *JobList) resize() {
+	contentWidth := jobList.contentWidth()
+	contentHeight := max(1, jobList.height-8)
+	jobList.JobsTable.SetColumns(columns(contentWidth))
+	jobList.JobsTable.SetWidth(contentWidth)
+	jobList.JobsTable.SetHeight(contentHeight)
+	progress := jobList.details.ScrollPercent()
+	jobList.details.Width = contentWidth
+	jobList.details.Height = contentHeight
+	if jobList.screen == detailsScreen {
+		jobList.setDetails()
+		jobList.details.SetYOffset(int(progress * float64(max(0, jobList.details.TotalLineCount()-jobList.details.Height))))
+	}
+}
+
+func (jobList *JobList) selected() *model.StoredJobApplication {
+	cursor := jobList.JobsTable.Cursor()
+	if cursor < 0 || cursor >= len(jobList.visible) {
+		return nil
+	}
+	return &jobList.jobs[jobList.visible[cursor]]
+}
+
+func (jobList *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		jl.width = msg.Width
-		jl.height = msg.Height
-		jl.resize()
-		return jl, nil
+		jobList.width = msg.Width
+		jobList.height = msg.Height
+		jobList.resize()
+		return jobList, nil
 	case pendingQuitMsg:
-		jl.quitBlocked = jl.Busy()
-		return jl, nil
+		jobList.quitBlocked = jobList.Busy()
+		return jobList, nil
 	case savedMsg:
-		jl.quitBlocked = false
-		jl.saving = false
+		jobList.quitBlocked = false
+		jobList.saving = false
 		if msg.err != nil {
-			jl.formError = msg.err.Error()
-			return jl, nil
+			jobList.formError = msg.err.Error()
+			return jobList, nil
 		}
 		updated := false
-		for i := range jl.jobs {
-			if jl.jobs[i].ID == msg.application.ID {
-				jl.jobs[i] = msg.application
+		for index := range jobList.jobs {
+			if jobList.jobs[index].ID == msg.application.ID {
+				jobList.jobs[index] = msg.application
 				updated = true
 				break
 			}
 		}
 		if !updated {
-			jl.jobs = append(jl.jobs, msg.application)
+			jobList.jobs = append(jobList.jobs, msg.application)
 		}
-		jl.rebuild(msg.application.ID)
-		jl.notice = "Application saved"
+		jobList.rebuild(msg.application.ID)
+		jobList.notice = "Application saved"
 		if updated {
-			jl.notice = "Application updated"
+			jobList.notice = "Application updated"
 		}
-		if selected := jl.selected(); selected == nil || selected.ID != msg.application.ID {
-			jl.notice = "Saved · hidden by filter; Esc clears it"
+		if selected := jobList.selected(); selected == nil || selected.ID != msg.application.ID {
+			jobList.notice = "Saved · hidden by filter; Esc clears it"
 		}
-		jl.screen = listScreen
-		return jl, nil
+		jobList.screen = listScreen
+		return jobList, nil
 	case deletedMsg:
-		jl.quitBlocked = false
-		jl.deleting = false
+		jobList.quitBlocked = false
+		jobList.deleting = false
 		if msg.err != nil {
-			jl.notice = "Delete failed: " + msg.err.Error()
-			return jl, nil
+			jobList.notice = "Delete failed: " + msg.err.Error()
+			return jobList, nil
 		}
-		cursor := jl.JobsTable.Cursor()
-		for i, app := range jl.jobs {
-			if app.ID == msg.id {
-				jl.jobs = append(jl.jobs[:i], jl.jobs[i+1:]...)
+		cursor := jobList.JobsTable.Cursor()
+		for index, application := range jobList.jobs {
+			if application.ID == msg.id {
+				jobList.jobs = append(jobList.jobs[:index], jobList.jobs[index+1:]...)
 				break
 			}
 		}
-		jl.rebuild(0)
-		jl.JobsTable.SetCursor(min(cursor, max(0, len(jl.visible)-1)))
-		jl.markSelection()
-		jl.screen = listScreen
-		jl.notice = "Application deleted"
-		return jl, nil
+		jobList.rebuild(0)
+		jobList.JobsTable.SetCursor(min(cursor, max(0, len(jobList.visible)-1)))
+		jobList.markSelection()
+		jobList.screen = listScreen
+		jobList.notice = "Application deleted"
+		return jobList, nil
 	case tea.KeyMsg:
 		key := msg.String()
 		if key == "ctrl+c" {
-			if jl.Busy() {
-				jl.quitBlocked = true
-				return jl, nil
+			if jobList.Busy() {
+				jobList.quitBlocked = true
+				return jobList, nil
 			}
-			return jl, tea.Quit
+			return jobList, tea.Quit
 		}
-		if jl.screen == deleteScreen {
-			return jl, jl.updateDelete(msg)
+		if jobList.screen == deleteScreen {
+			return jobList, jobList.updateDelete(msg)
 		}
-		if jl.screen == addScreen {
-			return jl, jl.updateForm(msg)
+		if jobList.screen == addScreen {
+			return jobList, jobList.updateForm(msg)
 		}
-		if jl.screen == listScreen && jl.control != noControl {
-			jl.updateControl(msg)
-			return jl, nil
+		if jobList.screen == listScreen && jobList.control != noControl {
+			jobList.updateControl(msg)
+			return jobList, nil
 		}
 		if key == "e" || key == "u" {
-			jl.beginEdit(key == "u")
-			return jl, nil
+			jobList.beginEdit(key == "u")
+			return jobList, nil
 		}
-		if key == "d" && jl.selected() != nil {
-			if jl.remove == nil {
-				jl.notice = "Deletion is unavailable"
-				return jl, nil
+		if key == "d" && jobList.selected() != nil {
+			if jobList.remove == nil {
+				jobList.notice = "Deletion is unavailable"
+				return jobList, nil
 			}
-			jl.returnScreen = jl.screen
-			jl.screen = deleteScreen
-			jl.notice = ""
-			return jl, nil
+			jobList.returnScreen = jobList.screen
+			jobList.screen = deleteScreen
+			jobList.notice = ""
+			return jobList, nil
 		}
 		if key == "q" {
-			if jl.Busy() {
-				jl.quitBlocked = true
-				return jl, nil
+			if jobList.Busy() {
+				jobList.quitBlocked = true
+				return jobList, nil
 			}
-			return jl, tea.Quit
+			return jobList, tea.Quit
 		}
 		if key == "esc" {
-			if jl.screen == listScreen {
-				id := jl.selectedID()
-				jl.query = ""
-				jl.status = ""
-				jl.notice = ""
-				jl.rebuild(id)
+			if jobList.screen == listScreen {
+				id := jobList.selectedID()
+				jobList.query = ""
+				jobList.status = ""
+				jobList.notice = ""
+				jobList.rebuild(id)
 			}
-			jl.screen = listScreen
-			return jl, nil
+			jobList.screen = listScreen
+			return jobList, nil
 		}
-		if jl.screen == detailsScreen {
+		if jobList.screen == detailsScreen {
 			switch key {
 			case "g", "home":
-				jl.details.GotoTop()
-				return jl, nil
+				jobList.details.GotoTop()
+				return jobList, nil
 			case "G", "end":
-				jl.details.GotoBottom()
-				return jl, nil
+				jobList.details.GotoBottom()
+				return jobList, nil
 			}
 		}
-		if jl.screen == listScreen {
+		if jobList.screen == listScreen {
 			if key == "s" {
-				jl.control = sortControl
-				jl.sortDraft = jl.sortIndex
-				return jl, nil
+				jobList.control = sortControl
+				jobList.sortDraft = jobList.sortIndex
+				return jobList, nil
 			}
 			if key == "/" {
-				jl.control = filterControl
-				jl.queryDraft = jl.query
-				jl.statusDraft = 0
+				jobList.control = filterControl
+				jobList.queryDraft = jobList.query
+				jobList.statusDraft = 0
 				for i, status := range statuses {
-					if status == jl.status {
-						jl.statusDraft = i
+					if status == jobList.status {
+						jobList.statusDraft = i
 					}
 				}
-				return jl, nil
+				return jobList, nil
 			}
-			if key == "enter" && jl.selected() != nil {
-				jl.screen = detailsScreen
-				jl.setDetails()
-				jl.details.GotoTop()
-				return jl, nil
+			if key == "enter" && jobList.selected() != nil {
+				jobList.screen = detailsScreen
+				jobList.setDetails()
+				jobList.details.GotoTop()
+				return jobList, nil
 			}
 			if key == "a" {
-				jl.screen = addScreen
-				jl.editID = 0
-				jl.returnScreen = listScreen
-				jl.fields = defaultFields()
-				jl.cursor = 0
-				jl.field = 0
-				jl.formError = ""
-				return jl, nil
+				jobList.screen = addScreen
+				jobList.editID = 0
+				jobList.returnScreen = listScreen
+				jobList.fields = defaultFields()
+				jobList.cursor = 0
+				jobList.field = 0
+				jobList.formError = ""
+				return jobList, nil
 			}
 		}
 	}
 	var cmd tea.Cmd
-	if jl.screen == listScreen {
-		jl.JobsTable, cmd = jl.JobsTable.Update(msg)
-		jl.markSelection()
+	if jobList.screen == listScreen {
+		jobList.JobsTable, cmd = jobList.JobsTable.Update(msg)
+		jobList.markSelection()
 	}
-	if jl.screen == detailsScreen {
-		jl.details, cmd = jl.details.Update(msg)
+	if jobList.screen == detailsScreen {
+		jobList.details, cmd = jobList.details.Update(msg)
 	}
-	return jl, cmd
+	return jobList, cmd
 }
 
-func (jl *JobList) View() string {
-	if jl.width == 0 || jl.height == 0 {
+func (jobList *JobList) View() string {
+	if jobList.width == 0 || jobList.height == 0 {
 		return ""
 	}
-	if jl.quitBlocked && jl.Busy() {
-		return jl.pendingPopup()
+	if jobList.quitBlocked && jobList.Busy() {
+		return jobList.pendingPopup()
 	}
-	if jl.width < 24 || jl.height < 9 {
-		return ansi.Truncate("Resize to 24 × 9 · Ctrl+C quits", max(1, jl.width), "…")
+	if jobList.width < 24 || jobList.height < 9 {
+		return ansi.Truncate("Resize to 24 × 9 · Ctrl+C quits", max(1, jobList.width), "…")
 	}
-	w := jl.contentWidth()
-	h := max(1, jl.height-8)
+	contentWidth := jobList.contentWidth()
+	contentHeight := max(1, jobList.height-8)
 	title := "Applications"
 	help := "j/k ↵ details  a add  e edit  u status  d delete  s sort  / filter  q quit"
-	subtitle := fmt.Sprintf("%d of %d applications", len(jl.visible), len(jl.jobs))
-	if len(jl.visible) > 0 {
-		subtitle += fmt.Sprintf("  ·  row %d", jl.JobsTable.Cursor()+1)
+	subtitle := fmt.Sprintf("%d of %d applications", len(jobList.visible), len(jobList.jobs))
+	if len(jobList.visible) > 0 {
+		subtitle += fmt.Sprintf("  ·  row %d", jobList.JobsTable.Cursor()+1)
 	}
-	choice := sortChoices[jl.sortIndex]
+	choice := sortChoices[jobList.sortIndex]
 	toolbar := choice.field + " · " + choice.direction
-	if jl.hasFilter() {
+	if jobList.hasFilter() {
 		toolbar += "  |  "
-		if jl.query != "" {
-			toolbar += "“" + jl.query + "” "
+		if jobList.query != "" {
+			toolbar += "“" + jobList.query + "” "
 		}
-		if jl.status != "" {
-			toolbar += string(jl.status)
+		if jobList.status != "" {
+			toolbar += string(jobList.status)
 		}
 	}
-	body := jl.JobsTable.View()
-	if len(jl.jobs) == 0 {
+	body := jobList.JobsTable.View()
+	if len(jobList.jobs) == 0 {
 		body = accent.Render("A fresh start.") + "\nNo applications yet.\nPress a to add your first application."
-	} else if len(jl.visible) == 0 {
+	} else if len(jobList.visible) == 0 {
 		body = accent.Render("No matches.") + "\nTry a different search or status.\nPress Esc to clear filters."
 	}
-	if jl.screen == detailsScreen {
+	if jobList.screen == detailsScreen {
 		title = "Application"
-		subtitle = plain(jl.selected().JobApplication.CompanyName) + " · " + plain(jl.selected().JobApplication.Position)
-		toolbar = fmt.Sprintf("DETAILS  ·  %.0f%% scrolled", jl.details.ScrollPercent()*100)
-		body = jl.details.View()
+		subtitle = plain(jobList.selected().JobApplication.CompanyName) + " · " + plain(jobList.selected().JobApplication.Position)
+		toolbar = fmt.Sprintf("DETAILS  ·  %.0f%% scrolled", jobList.details.ScrollPercent()*100)
+		body = jobList.details.View()
 		help = "j/k scroll  g/G top/end  e edit  u status  d delete  esc back  q quit"
 	}
-	if jl.screen == addScreen {
+	if jobList.screen == addScreen {
 		title = "New application"
-		if jl.editID != 0 {
+		if jobList.editID != 0 {
 			title = "Edit application"
 		}
-		subtitle = fmt.Sprintf("Field %d of %d · * required", jl.field+1, fieldCount)
-		toolbar = formFields[jl.field].hint
-		if jl.formError != "" {
-			toolbar = "Error: " + jl.formError
+		subtitle = fmt.Sprintf("Field %d of %d · * required", jobList.field+1, fieldCount)
+		toolbar = formFields[jobList.field].hint
+		if jobList.formError != "" {
+			toolbar = "Error: " + jobList.formError
 		}
-		if jl.saving {
+		if jobList.saving {
 			toolbar = "Saving…"
 		}
-		body = jl.formView()
+		body = jobList.formView()
 		help = "tab next   ctrl+s save   esc discard"
 	}
-	if jl.screen == deleteScreen {
+	if jobList.screen == deleteScreen {
 		title = "Delete application?"
 		subtitle = "This permanently removes the selected record."
 		toolbar = "Enter confirms · Esc cancels"
-		body = ansi.Hardwrap(plain(jl.selected().JobApplication.CompanyName)+"\n"+plain(jl.selected().JobApplication.Position), w, true)
+		body = ansi.Hardwrap(plain(jobList.selected().JobApplication.CompanyName)+"\n"+plain(jobList.selected().JobApplication.Position), contentWidth, true)
 		help = "enter delete   esc cancel"
-		if jl.deleting {
+		if jobList.deleting {
 			toolbar = "Deleting…"
-		} else if jl.notice != "" {
-			toolbar = jl.notice
+		} else if jobList.notice != "" {
+			toolbar = jobList.notice
 		}
 	}
-	if jl.control != noControl && jl.screen == listScreen {
-		body = jl.controlView(h)
+	if jobList.control != noControl && jobList.screen == listScreen {
+		body = jobList.controlView(contentHeight)
 		help = "j/k choose   enter apply   esc cancel"
-		if jl.control == filterControl {
+		if jobList.control == filterControl {
 			title = "Filter applications"
 			help = "tab status   enter apply   esc cancel"
 		} else {
 			title = "Sort applications"
 		}
 	}
-	if w < 60 && jl.screen == listScreen && jl.control == noControl {
+	if contentWidth < 60 && jobList.screen == listScreen && jobList.control == noControl {
 		help = "↵ a+ e u d s / q quit"
 	}
-	if w < 36 && jl.screen == listScreen && jl.control == noControl {
+	if contentWidth < 36 && jobList.screen == listScreen && jobList.control == noControl {
 		help = "↵ a e u d s / q quit"
 	}
-	if w < 36 && jl.screen == detailsScreen {
+	if contentWidth < 36 && jobList.screen == detailsScreen {
 		help = "j/k scroll esc back q"
 	}
-	if w < 36 && jl.screen == addScreen {
+	if contentWidth < 36 && jobList.screen == addScreen {
 		help = "tab ^s save esc discard"
 	}
-	if w < 36 && jl.control != noControl {
+	if contentWidth < 36 && jobList.control != noControl {
 		help = "↵ apply  esc cancel"
 	}
 	header := accent.Render("◈ JOBIT") + "  " + title
-	rule := muted.Render(strings.Repeat("─", w))
+	rule := muted.Render(strings.Repeat("─", contentWidth))
 	bodyLines := strings.Split(body, "\n")
-	if len(bodyLines) > h {
-		bodyLines = bodyLines[:h]
+	if len(bodyLines) > contentHeight {
+		bodyLines = bodyLines[:contentHeight]
 	}
-	for len(bodyLines) < h {
+	for len(bodyLines) < contentHeight {
 		bodyLines = append(bodyLines, "")
 	}
 	statusLine := toolbar
-	if jl.notice != "" && jl.screen == listScreen && jl.control == noControl {
-		statusLine = jl.notice + "  ·  " + toolbar
+	if jobList.notice != "" && jobList.screen == listScreen && jobList.control == noControl {
+		statusLine = jobList.notice + "  ·  " + toolbar
 	}
 	lines := []string{header, muted.Render(subtitle), rule, label.Render(statusLine), strings.Join(bodyLines, "\n"), rule, muted.Render(help)}
 	rows := strings.Split(strings.Join(lines, "\n"), "\n")
 	for i := range rows {
-		rows[i] = ansi.Truncate(rows[i], w, "…")
+		rows[i] = ansi.Truncate(rows[i], contentWidth, "…")
 	}
 	return lipgloss.NewStyle().Padding(1, 2).Render(strings.Join(rows, "\n"))
 }
 
 // Busy reports a pending database write.
-func (jl *JobList) Busy() bool { return jl.saving || jl.deleting }
+func (jobList *JobList) Busy() bool {
+	return jobList.saving || jobList.deleting
+}
 
 func ProtectPendingWrite(model tea.Model, msg tea.Msg) tea.Msg {
-	if m, ok := model.(*JobList); ok && m.Busy() {
+	if jobList, ok := model.(*JobList); ok && jobList.Busy() {
 		switch msg.(type) {
 		case tea.QuitMsg, tea.InterruptMsg:
 			return pendingQuitMsg{}
@@ -438,16 +453,16 @@ func ProtectPendingWrite(model tea.Model, msg tea.Msg) tea.Msg {
 	return msg
 }
 
-func (jl *JobList) pendingPopup() string {
-	if jl.width < 24 || jl.height < 9 {
-		return ansi.Truncate("Busy — please wait", max(1, jl.width), "")
+func (jobList *JobList) pendingPopup() string {
+	if jobList.width < 24 || jobList.height < 9 {
+		return ansi.Truncate("Busy — please wait", max(1, jobList.width), "")
 	}
 	title := "Saving changes…"
-	if jl.deleting {
+	if jobList.deleting {
 		title = "Deleting record…"
 	}
-	width := min(42, jl.width-6)
+	width := min(42, jobList.width-6)
 	content := accent.Render(title) + "\n\n" + ansi.Wrap("Please wait, then quit again.", width, "")
 	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("79")).Padding(1, 2).Width(width + 4).Render(content)
-	return lipgloss.Place(jl.width, jl.height, lipgloss.Center, lipgloss.Center, box)
+	return lipgloss.Place(jobList.width, jobList.height, lipgloss.Center, lipgloss.Center, box)
 }

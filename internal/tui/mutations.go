@@ -15,78 +15,80 @@ type deletedMsg struct {
 }
 
 // SetMutationHandlers enables editing and deletion using the caller's repository.
-func (jl *JobList) SetMutationHandlers(update UpdateApplication, remove DeleteApplication) {
-	jl.update = update
-	jl.remove = remove
+func (jobList *JobList) SetMutationHandlers(update UpdateApplication, remove DeleteApplication) {
+	jobList.update = update
+	jobList.remove = remove
 }
 
-func fieldsFromApplication(a model.JobApplication) [fieldCount]string {
-	var f [fieldCount]string
-	f[companyField] = a.CompanyName
-	f[positionField] = a.Position
-	f[locationField] = a.Location
-	f[rankField] = strconv.Itoa(int(a.Rank))
-	if !a.ApplicationDate.IsZero() {
-		f[dateField] = a.ApplicationDate.UTC().Format("2006-01-02")
+func fieldsFromApplication(application model.JobApplication) [fieldCount]string {
+	var fields [fieldCount]string
+	fields[companyField] = application.CompanyName
+	fields[positionField] = application.Position
+	fields[locationField] = application.Location
+	fields[rankField] = strconv.Itoa(int(application.Rank))
+	if !application.ApplicationDate.IsZero() {
+		fields[dateField] = application.ApplicationDate.UTC().Format("2006-01-02")
 	}
-	f[statusField] = string(a.Status)
-	f[referralField] = "no"
-	if a.Referral {
-		f[referralField] = "yes"
+	fields[statusField] = string(application.Status)
+	fields[referralField] = "no"
+	if application.Referral {
+		fields[referralField] = "yes"
 	}
-	f[modeField] = string(a.WorkMode)
-	f[notesField] = a.Notes
-	f[postingField] = a.JobPostingLink
-	f[websiteField] = a.CompanyWebsiteLink
-	if a.Pay != nil {
-		if a.Pay.Min != nil {
-			f[minField] = strconv.Itoa(*a.Pay.Min)
+	fields[modeField] = string(application.WorkMode)
+	fields[notesField] = application.Notes
+	fields[postingField] = application.JobPostingLink
+	fields[websiteField] = application.CompanyWebsiteLink
+	if application.Pay != nil {
+		if application.Pay.Min != nil {
+			fields[minField] = strconv.Itoa(*application.Pay.Min)
 		}
-		if a.Pay.Max != nil {
-			f[maxField] = strconv.Itoa(*a.Pay.Max)
+		if application.Pay.Max != nil {
+			fields[maxField] = strconv.Itoa(*application.Pay.Max)
 		}
-		if a.Pay.Currency != nil {
-			f[currencyField] = *a.Pay.Currency
+		if application.Pay.Currency != nil {
+			fields[currencyField] = *application.Pay.Currency
 		}
 	}
-	return f
+	return fields
 }
-func (jl *JobList) beginEdit(statusOnly bool) {
-	stored := jl.selected()
+
+func (jobList *JobList) beginEdit(statusOnly bool) {
+	stored := jobList.selected()
 	if stored == nil {
 		return
 	}
-	if jl.update == nil {
-		jl.notice = "Editing is unavailable"
+	if jobList.update == nil {
+		jobList.notice = "Editing is unavailable"
 		return
 	}
-	jl.returnScreen = jl.screen
-	jl.editID = stored.ID
-	jl.fields = fieldsFromApplication(stored.JobApplication)
-	jl.field = companyField
+	jobList.returnScreen = jobList.screen
+	jobList.editID = stored.ID
+	jobList.fields = fieldsFromApplication(stored.JobApplication)
+	jobList.field = companyField
 	if statusOnly {
-		jl.field = statusField
+		jobList.field = statusField
 	}
-	jl.cursor = len([]rune(jl.fields[jl.field]))
-	jl.formError = ""
-	jl.screen = addScreen
+	jobList.cursor = len([]rune(jobList.fields[jobList.field]))
+	jobList.formError = ""
+	jobList.screen = addScreen
 }
-func (jl *JobList) updateDelete(msg tea.KeyMsg) tea.Cmd {
-	if jl.deleting {
+
+func (jobList *JobList) updateDelete(msg tea.KeyMsg) tea.Cmd {
+	if jobList.deleting {
 		return nil
 	}
 	switch msg.String() {
 	case "esc", "n":
-		jl.screen = jl.returnScreen
-		jl.notice = ""
+		jobList.screen = jobList.returnScreen
+		jobList.notice = ""
 	case "enter":
-		id := jl.selectedID()
-		if id == 0 || jl.remove == nil {
+		id := jobList.selectedID()
+		if id == 0 || jobList.remove == nil {
 			return nil
 		}
-		jl.deleting = true
-		jl.notice = ""
-		remove := jl.remove
+		jobList.deleting = true
+		jobList.notice = ""
+		remove := jobList.remove
 		return func() tea.Msg { return deletedMsg{id, remove(id)} }
 	}
 	return nil
