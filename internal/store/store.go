@@ -162,7 +162,11 @@ func PatchJobApplication(
 		return err
 	}
 
-	if rowsAffected, _ := res.RowsAffected(); rowsAffected != 1 {
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected != 1 {
 		return sql.ErrNoRows
 	}
 
