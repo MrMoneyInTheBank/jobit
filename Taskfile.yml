@@ -5,9 +5,9 @@ env:
 
 tasks:
   run-dev:
-    desc: Run jobit (JOBIT_DB_DSN overrides the user data path)
+    desc: Run with ./dev.db (or JOBIT_DB_DSN)
     cmds:
-      - go run ./cmd/jobit
+      - JOBIT_DB_DSN="${JOBIT_DB_DSN:-./dev.db}" go run ./cmd/jobit
   run-prod:
     desc: Build and run jobit (JOBIT_DB_DSN overrides the user data path)
     cmds:
@@ -17,7 +17,7 @@ tasks:
     cmds:
       - go build -o bin/jobit ./cmd/jobit
   seed:
-    desc: Add 50 sample applications to JOBIT_DB_DSN or the user data path
+    desc: Add 50 sample applications to JOBIT_DB_DSN or ./dev.db
     cmds:
       - go run ./cmd/seed
   fmt:
