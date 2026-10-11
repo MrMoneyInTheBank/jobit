@@ -20,6 +20,7 @@ const (
 	listScreen screen = iota
 	detailsScreen
 	addScreen
+	deleteScreen
 )
 
 type SaveApplication func(model.JobApplication) (model.StoredJobApplication, error)
@@ -29,6 +30,11 @@ type savedMsg struct {
 }
 
 type JobList struct {
+	update               UpdateApplication
+	remove               DeleteApplication
+	editID               int64
+	returnScreen         screen
+	deleting             bool
 	JobsTable            table.Model
 	jobs                 []model.StoredJobApplication
 	width, height        int
@@ -151,24 +157,73 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			jl.formError = msg.err.Error()
 			return jl, nil
 		}
-		jl.jobs = append(jl.jobs, msg.application)
+		updated := false
+		for i := range jl.jobs {
+			if jl.jobs[i].ID == msg.application.ID {
+				jl.jobs[i] = msg.application
+				updated = true
+				break
+			}
+		}
+		if !updated {
+			jl.jobs = append(jl.jobs, msg.application)
+		}
 		jl.rebuild(msg.application.ID)
 		jl.notice = "Application saved"
+		if updated {
+			jl.notice = "Application updated"
+		}
 		if selected := jl.selected(); selected == nil || selected.ID != msg.application.ID {
 			jl.notice = "Saved · hidden by filter; Esc clears it"
 		}
 		jl.screen = listScreen
+		return jl, nil
+	case deletedMsg:
+		jl.deleting = false
+		if msg.err != nil {
+			jl.notice = "Delete failed: " + msg.err.Error()
+			return jl, nil
+		}
+		cursor := jl.JobsTable.Cursor()
+		for i, app := range jl.jobs {
+			if app.ID == msg.id {
+				jl.jobs = append(jl.jobs[:i], jl.jobs[i+1:]...)
+				break
+			}
+		}
+		jl.rebuild(0)
+		jl.JobsTable.SetCursor(min(cursor, max(0, len(jl.visible)-1)))
+		jl.markSelection()
+		jl.screen = listScreen
+		jl.notice = "Application deleted"
 		return jl, nil
 	case tea.KeyMsg:
 		key := msg.String()
 		if key == "ctrl+c" {
 			return jl, tea.Quit
 		}
+		if jl.screen == deleteScreen {
+			return jl, jl.updateDelete(msg)
+		}
 		if jl.screen == addScreen {
 			return jl, jl.updateForm(msg)
 		}
 		if jl.screen == listScreen && jl.control != noControl {
 			jl.updateControl(msg)
+			return jl, nil
+		}
+		if key == "e" || key == "u" {
+			jl.beginEdit(key == "u")
+			return jl, nil
+		}
+		if key == "d" && jl.selected() != nil {
+			if jl.remove == nil {
+				jl.notice = "Deletion is unavailable"
+				return jl, nil
+			}
+			jl.returnScreen = jl.screen
+			jl.screen = deleteScreen
+			jl.notice = ""
 			return jl, nil
 		}
 		if key == "q" {
@@ -220,6 +275,8 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "a" {
 				jl.screen = addScreen
+				jl.editID = 0
+				jl.returnScreen = listScreen
 				jl.fields = defaultFields()
 				jl.cursor = 0
 				jl.field = 0
@@ -249,7 +306,7 @@ func (jl *JobList) View() string {
 	w := jl.contentWidth()
 	h := max(1, jl.height-8)
 	title := "Applications"
-	help := "↑↓ j/k move   ↵ details   a add   s sort   / filter   q quit"
+	help := "j/k ↵ details  a add  e edit  u status  d delete  s sort  / filter  q quit"
 	subtitle := fmt.Sprintf("%d of %d applications", len(jl.visible), len(jl.jobs))
 	if len(jl.visible) > 0 {
 		subtitle += fmt.Sprintf("  ·  row %d", jl.JobsTable.Cursor()+1)
@@ -276,10 +333,13 @@ func (jl *JobList) View() string {
 		subtitle = plain(jl.selected().JobApplication.CompanyName) + " · " + plain(jl.selected().JobApplication.Position)
 		toolbar = fmt.Sprintf("DETAILS  ·  %.0f%% scrolled", jl.details.ScrollPercent()*100)
 		body = jl.details.View()
-		help = "j/k scroll   g/G top/end   esc back   q quit"
+		help = "j/k scroll  g/G top/end  e edit  u status  d delete  esc back  q quit"
 	}
 	if jl.screen == addScreen {
 		title = "New application"
+		if jl.editID != 0 {
+			title = "Edit application"
+		}
 		subtitle = fmt.Sprintf("Field %d of %d · * required", jl.field+1, fieldCount)
 		toolbar = formFields[jl.field].hint
 		if jl.formError != "" {
@@ -290,6 +350,18 @@ func (jl *JobList) View() string {
 		}
 		body = jl.formView()
 		help = "tab next   ctrl+s save   esc discard"
+	}
+	if jl.screen == deleteScreen {
+		title = "Delete application?"
+		subtitle = "This permanently removes the selected record."
+		toolbar = "Enter confirms · Esc cancels"
+		body = ansi.Hardwrap(plain(jl.selected().JobApplication.CompanyName)+"\n"+plain(jl.selected().JobApplication.Position), w, true)
+		help = "enter delete   esc cancel"
+		if jl.deleting {
+			toolbar = "Deleting…"
+		} else if jl.notice != "" {
+			toolbar = jl.notice
+		}
 	}
 	if jl.control != noControl && jl.screen == listScreen {
 		body = jl.controlView(h)
@@ -302,10 +374,10 @@ func (jl *JobList) View() string {
 		}
 	}
 	if w < 60 && jl.screen == listScreen && jl.control == noControl {
-		help = "j/k ↵view a+ s / q quit"
+		help = "↵ a+ e u d s / q quit"
 	}
 	if w < 36 && jl.screen == listScreen && jl.control == noControl {
-		help = "↵ a+ s / q quit"
+		help = "↵ a e u d s / q quit"
 	}
 	if w < 36 && jl.screen == detailsScreen {
 		help = "j/k scroll esc back q"

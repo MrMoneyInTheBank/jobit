@@ -191,7 +191,7 @@ func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
 	jl.cursor = min(jl.cursor, len(r))
 	switch msg.String() {
 	case "esc":
-		jl.screen = listScreen
+		jl.screen = jl.returnScreen
 		jl.notice = "Draft discarded"
 	case "tab", "down":
 		jl.moveField(1)
@@ -250,7 +250,7 @@ func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
 			jl.fields[jl.field] = string(r[:jl.cursor]) + string(r[jl.cursor+1:])
 		}
 	case "ctrl+s":
-		if jl.save == nil {
+		if (jl.editID == 0 && jl.save == nil) || (jl.editID != 0 && jl.update == nil) {
 			jl.formError = "Saving is unavailable in this view"
 			return nil
 		}
@@ -263,6 +263,11 @@ func (jl *JobList) updateForm(msg tea.KeyMsg) tea.Cmd {
 		}
 		jl.saving = true
 		jl.formError = ""
+		if jl.editID != 0 {
+			stored := model.StoredJobApplication{ID: jl.editID, JobApplication: app}
+			update := jl.update
+			return func() tea.Msg { return savedMsg{stored, update(stored)} }
+		}
 		save := jl.save
 		return func() tea.Msg { stored, err := save(app); return savedMsg{stored, err} }
 	default:
