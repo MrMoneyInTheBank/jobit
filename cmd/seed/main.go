@@ -20,7 +20,7 @@ func main() {
 
 	err = store.SeedDB(db, 50)
 	if err != nil {
-		log.Fatalf("Could not seed database.")
+		log.Fatalf("Could not seed database: %v", err)
 	}
 	log.Println("Seeded database.")
 }
