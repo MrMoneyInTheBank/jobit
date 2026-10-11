@@ -59,6 +59,15 @@ executable and the local data file. No repository checkout is needed at runtime.
 `@latest` installs published source, so unreleased local changes require a build
 from the working tree.
 
+To build the current checkout instead, clone this repository and run:
+
+```sh
+CGO_ENABLED=1 go build -o bin/jobit ./cmd/jobit
+./bin/jobit
+```
+
+If you have Task v3 installed, `task run` builds and starts the same executable.
+
 ## Data location
 
 Jobit uses one persistent database per user, independent of where it is launched:
@@ -72,8 +81,30 @@ Run `jobit --help` (or `jobit -h`) to see the resolved database location.
 Help does not create directories or open the database. Normal startup creates
 that directory and applies the current embedded schema. Reinstalling the
 executable does not remove your data. Jobit does not accept a custom database
-path. Databases with an older schema are rejected without changing their rows;
-back up and remove the old file if you want to start fresh.
+path. On startup, Jobit replaces an incompatible **empty** pre-release schema.
+An incompatible database with applications is rejected without changing its rows.
+Back it up before removing it if you want to start fresh.
+
+## Uninstall and delete data
+
+Quit Jobit before removing its files. For a `go install` installation, delete
+the `jobit` executable from `go env GOBIN`, or from the `bin` directory under
+`go env GOPATH` when GOBIN is empty. For a repository build, delete `bin/jobit`
+or remove the checkout. Removing the executable does **not** delete your data.
+
+To delete your applications permanently, remove Jobit's data directory after
+closing all Jobit instances. The directory contains `jobit.db`, the instance
+lock, and any SQLite sidecar files. Find its exact location with `jobit --help`:
+
+| Platform | Data directory |
+| --- | --- |
+| macOS | `~/Library/Application Support/jobit` |
+| Linux | `$XDG_DATA_HOME/jobit`, or `~/.local/share/jobit` when XDG_DATA_HOME is absent or relative |
+
+For example, on macOS run `rm -r "$HOME/Library/Application Support/jobit"`.
+On Linux, use the parent directory of the database path shown by `jobit --help`.
+Check the directory before deleting it; this action cannot be undone without a
+backup.
 
 ## Run and develop
 
@@ -137,7 +168,7 @@ gofmt -w ./cmd ./internal # task fmt: apply formatting
 ```
 
 All checks share scripts/check.sh. GitHub Actions runs its `all` mode, builds
-both commands, and runs race tests on macOS and Linux for every push and pull
+Jobit, and runs race tests on macOS and Linux for every push and pull
 request. It uses go.mod for Go setup, CGO_ENABLED=1, and build-essential on Linux.
 
 Enable the versioned local hook after each fresh clone:
@@ -167,7 +198,7 @@ workaround, not a SQLite requirement. Formatting, tests, and vet pass using the 
 
 Persistence reads are ordered by ascending database ID. Invalid stored dates
 return an error identifying the row. Startup errors are written to stderr.
-Persistence tests cover empty databases, DSN precedence, file reopen, optional
+Persistence tests cover empty databases, file reopen, optional
 fields, invalid IDs, missing rows, schema failures, and seed rollback on insert
 and commit failures.
 
@@ -269,6 +300,8 @@ hidden by the active filter is reported in the list's status line.
 
 ## Command-line utilities
 
+- `jobit --help` (or `jobit -h`) shows usage and the database location without
+  opening or creating the database.
 - `jobit --version` prints the installed module version, or development revision.
   Release builds can set a version with `go build -ldflags "-X main.version=v1.0.0" ./cmd/jobit`.
 - `jobit --export-csv applications.csv` exports every record and field from the
@@ -276,7 +309,8 @@ hidden by the active filter is reported in the list's status line.
 - `jobit --export-csv -` writes CSV to standard output. Exports include raw text,
   multiline notes, separate pay columns, and database IDs; filters do not apply.
   Empty optional pay fields remain empty and explicit zero amounts remain zero.
-- `jobit --help` lists options and database locations.
+  Redirect stdout to save it: `jobit --export-csv - > applications.csv`.
+  `--export-csv=` reports a missing filename.
 
 Only one interactive Jobit instance may run per user data directory. A second launch directs you to the
 existing terminal tab/window; attaching to another terminal is not supported.
