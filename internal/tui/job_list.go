@@ -29,7 +29,10 @@ type savedMsg struct {
 	err         error
 }
 
+type pendingQuitMsg struct{}
+
 type JobList struct {
+	quitBlocked          bool
 	update               UpdateApplication
 	remove               DeleteApplication
 	editID               int64
@@ -151,7 +154,11 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		jl.height = msg.Height
 		jl.resize()
 		return jl, nil
+	case pendingQuitMsg:
+		jl.quitBlocked = jl.Busy()
+		return jl, nil
 	case savedMsg:
+		jl.quitBlocked = false
 		jl.saving = false
 		if msg.err != nil {
 			jl.formError = msg.err.Error()
@@ -179,6 +186,7 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		jl.screen = listScreen
 		return jl, nil
 	case deletedMsg:
+		jl.quitBlocked = false
 		jl.deleting = false
 		if msg.err != nil {
 			jl.notice = "Delete failed: " + msg.err.Error()
@@ -200,6 +208,10 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		key := msg.String()
 		if key == "ctrl+c" {
+			if jl.Busy() {
+				jl.quitBlocked = true
+				return jl, nil
+			}
 			return jl, tea.Quit
 		}
 		if jl.screen == deleteScreen {
@@ -227,6 +239,10 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return jl, nil
 		}
 		if key == "q" {
+			if jl.Busy() {
+				jl.quitBlocked = true
+				return jl, nil
+			}
 			return jl, tea.Quit
 		}
 		if key == "esc" {
@@ -299,6 +315,9 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (jl *JobList) View() string {
 	if jl.width == 0 || jl.height == 0 {
 		return ""
+	}
+	if jl.quitBlocked && jl.Busy() {
+		return jl.pendingPopup()
 	}
 	if jl.width < 24 || jl.height < 9 {
 		return ansi.Truncate("Resize to 24 × 9 · Ctrl+C quits", max(1, jl.width), "…")
@@ -407,4 +426,31 @@ func (jl *JobList) View() string {
 		rows[i] = ansi.Truncate(rows[i], w, "…")
 	}
 	return lipgloss.NewStyle().Padding(1, 2).Render(strings.Join(rows, "\n"))
+}
+
+// Busy reports a pending database write.
+func (jl *JobList) Busy() bool { return jl.saving || jl.deleting }
+
+func ProtectPendingWrite(model tea.Model, msg tea.Msg) tea.Msg {
+	if m, ok := model.(*JobList); ok && m.Busy() {
+		switch msg.(type) {
+		case tea.QuitMsg, tea.InterruptMsg:
+			return pendingQuitMsg{}
+		}
+	}
+	return msg
+}
+
+func (jl *JobList) pendingPopup() string {
+	if jl.width < 24 || jl.height < 9 {
+		return ansi.Truncate("Busy — please wait", max(1, jl.width), "")
+	}
+	title := "Saving changes…"
+	if jl.deleting {
+		title = "Deleting record…"
+	}
+	width := min(42, jl.width-6)
+	content := accent.Render(title) + "\n\n" + ansi.Wrap("Please wait, then quit again.", width, "")
+	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("79")).Padding(1, 2).Width(width + 4).Render(content)
+	return lipgloss.Place(jl.width, jl.height, lipgloss.Center, lipgloss.Center, box)
 }
