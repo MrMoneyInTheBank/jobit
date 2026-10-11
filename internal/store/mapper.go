@@ -35,12 +35,12 @@ func bindJobApplication(application model.JobApplication) boundJobApplication {
 		referral:        application.Referral,
 	}
 
-	if application.Remote != nil {
-		boundedApp.remote = sql.NullString{String: string(*application.Remote), Valid: true}
+	if application.WorkMode != "" {
+		boundedApp.remote = sql.NullString{String: string(application.WorkMode), Valid: true}
 	}
 
-	if application.Location != nil {
-		boundedApp.location = sql.NullString{String: *application.Location, Valid: true}
+	if application.Location != "" {
+		boundedApp.location = sql.NullString{String: application.Location, Valid: true}
 	}
 
 	if application.Pay != nil {
@@ -57,17 +57,17 @@ func bindJobApplication(application model.JobApplication) boundJobApplication {
 		}
 	}
 
-	if application.Ranking != nil {
-		boundedApp.ranking = sql.NullInt64{Int64: int64(*application.Ranking), Valid: true}
+	if application.Rank != 0 {
+		boundedApp.ranking = sql.NullInt64{Int64: int64(application.Rank), Valid: true}
 	}
-	if application.Notes != nil {
-		boundedApp.notes = sql.NullString{String: *application.Notes, Valid: true}
+	if application.Notes != "" {
+		boundedApp.notes = sql.NullString{String: application.Notes, Valid: true}
 	}
-	if application.JobPostingLink != nil {
-		boundedApp.jobPostingLink = sql.NullString{String: *application.JobPostingLink, Valid: true}
+	if application.JobPostingLink != "" {
+		boundedApp.jobPostingLink = sql.NullString{String: application.JobPostingLink, Valid: true}
 	}
-	if application.CompanyWebsiteLink != nil {
-		boundedApp.companyWebsiteLink = sql.NullString{String: *application.CompanyWebsiteLink, Valid: true}
+	if application.CompanyWebsiteLink != "" {
+		boundedApp.companyWebsiteLink = sql.NullString{String: application.CompanyWebsiteLink, Valid: true}
 	}
 
 	return boundedApp
@@ -94,11 +94,11 @@ func (b boundJobApplication) insertArgs() []any {
 
 var ErrInvalidID = errors.New("Invalid ID")
 
-func bindJobApplicationPatch(app model.JobApplication) (boundJobApplication, error) {
+func bindJobApplicationPatch(app model.StoredJobApplication) (boundJobApplication, error) {
 	if app.ID <= 0 {
 		return boundJobApplication{}, ErrInvalidID
 	}
-	boundedApp := bindJobApplication(app)
+	boundedApp := bindJobApplication(app.JobApplication)
 	boundedApp.id = app.ID
 	return boundedApp, nil
 }
@@ -123,9 +123,8 @@ func (b boundJobApplication) updateArgs() []any {
 	}
 }
 
-func (b boundJobApplication) toModel() model.JobApplication {
+func (b boundJobApplication) toModel() model.StoredJobApplication {
 	app := model.JobApplication{
-		ID:              b.id,
 		CompanyName:     b.companyName,
 		Position:        b.position,
 		ApplicationDate: parseTimeString(b.applicationDate),
@@ -134,12 +133,11 @@ func (b boundJobApplication) toModel() model.JobApplication {
 	}
 
 	if b.remote.Valid {
-		r := model.RemoteType(b.remote.String)
-		app.Remote = &r
+		app.WorkMode = model.WorkMode(b.remote.String)
 	}
 
 	if b.location.Valid {
-		app.Location = &b.location.String
+		app.Location = b.location.String
 	}
 
 	if b.payMin.Valid || b.payMax.Valid || b.payCurrency.Valid {
@@ -161,23 +159,22 @@ func (b boundJobApplication) toModel() model.JobApplication {
 	}
 
 	if b.ranking.Valid {
-		v := int(b.ranking.Int64)
-		app.Ranking = &v
+		app.Rank = model.Ranking(b.ranking.Int64)
 	}
 
 	if b.notes.Valid {
-		app.Notes = &b.notes.String
+		app.Notes = b.notes.String
 	}
 
 	if b.jobPostingLink.Valid {
-		app.JobPostingLink = &b.jobPostingLink.String
+		app.JobPostingLink = b.jobPostingLink.String
 	}
 
 	if b.companyWebsiteLink.Valid {
-		app.CompanyWebsiteLink = &b.companyWebsiteLink.String
+		app.CompanyWebsiteLink = b.companyWebsiteLink.String
 	}
 
-	return app
+	return model.StoredJobApplication{ID: b.id, JobApplication: app}
 }
 
 func parseTimeString(applicationDate string) time.Time {

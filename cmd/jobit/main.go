@@ -9,10 +9,6 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/tui"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func main() {
 	f, err := tea.LogToFile("jobit.log", "debug")
 	if err != nil {
@@ -20,12 +16,14 @@ func main() {
 	}
 	defer f.Close()
 
-	db, err := store.OpenDB(ptr("seed.db"))
+	db, err := store.OpenDB(nil)
 	if err != nil {
 		log.Fatalf("Could not open database: %v", err)
 	}
 	defer store.CloseDB(db)
-	store.InitDB(db)
+	if err := store.InitDB(db); err != nil {
+		log.Fatalf("Could not initialize database: %v", err)
+	}
 
 	job_apps, err := store.GetJobApplications(db)
 	if err != nil {

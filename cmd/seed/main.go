@@ -6,19 +6,17 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/store"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func main() {
-	db, err := store.OpenDB(ptr("seed.db"))
+	db, err := store.OpenDB(nil)
 	if err != nil {
 		log.Fatalf("Could not open database: %v", err)
 	}
-	log.Printf("Opened database at %v\n", "seed.db")
+	log.Println("Opened database.")
 
 	defer store.CloseDB(db)
-	store.InitDB(db)
+	if err := store.InitDB(db); err != nil {
+		log.Fatalf("Could not initialize database: %v", err)
+	}
 
 	err = store.SeedDB(db, 50)
 	if err != nil {

@@ -19,7 +19,7 @@ var testApp model.JobApplication = model.JobApplication{
 
 func mustOpenDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := OpenDB(nil)
+	db, err := OpenDB(ptr(":memory:"))
 	if err != nil {
 		t.Fatalf("Could not open database: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestInitDB(t *testing.T) {
 }
 
 func TestCloseDB(t *testing.T) {
-	db, err := OpenDB(nil)
+	db, err := OpenDB(ptr(":memory:"))
 	t.Cleanup(func() { db.Close() })
 	if err != nil {
 		t.Fatalf("Could not open database: %v", err)
@@ -149,8 +149,8 @@ func TestPatchJobApplicationByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not get job application: %v", err)
 	}
-	if app.CompanyName != *patch.CompanyName {
-		fmt.Printf("app.CompanyName: %s\n", app.CompanyName)
+	if app.JobApplication.CompanyName != *patch.CompanyName {
+		fmt.Printf("app.JobApplication.CompanyName: %s\n", app.JobApplication.CompanyName)
 		fmt.Printf("patch.CompanyName: %s\n", *patch.CompanyName)
 		t.Fatalf("Company name mismatch")
 	}
@@ -175,5 +175,55 @@ func TestDeleteJobApplicationByID(t *testing.T) {
 	boundedApps, _ = GetJobApplications(db)
 	if len(boundedApps) != cnt-1 {
 		t.Fatalf("Number of applications mismatch post deletion.")
+	}
+}
+
+func TestRoundTripAndClear(t *testing.T) {
+	db := newTestDB(t)
+	original := testApp
+	original.WorkMode = model.WorkModeHybrid
+	original.Location = "London"
+	original.Rank = 5
+	original.Notes = "Follow up"
+	original.JobPostingLink = "https://example.com/job"
+	original.CompanyWebsiteLink = "https://example.com"
+	original.Pay = &model.Pay{Min: ptr(100), Max: ptr(200), Currency: ptr("GBP")}
+	id, err := AddJobApplication(db, original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := GetJobApplicationByID(db, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.JobApplication.Equal(original) {
+		t.Fatalf("round trip mismatch: %+v", got)
+	}
+	var noPay *model.Pay
+	patch := model.JobApplicationPatch{Location: ptr(""), Notes: ptr(""), Pay: &noPay, Rank: ptr(model.Ranking(0))}
+	if err := PatchJobApplication(db, *got, patch); err != nil {
+		t.Fatal(err)
+	}
+	original.Apply(patch)
+	got, err = GetJobApplicationByID(db, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.JobApplication.Equal(original) {
+		t.Fatalf("clearing mismatch: %+v", got)
+	}
+}
+
+func TestSeedDB(t *testing.T) {
+	db := newTestDB(t)
+	if err := SeedDB(db, 50); err != nil {
+		t.Fatal(err)
+	}
+	got, err := GetJobApplications(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 50 {
+		t.Fatalf("got %d rows", len(got))
 	}
 }

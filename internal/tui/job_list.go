@@ -24,46 +24,26 @@ func (jl *JobList) Init() tea.Cmd {
 	return tea.SetWindowTitle("\U0001F4BC Jobit")
 }
 
-func constructRow(job model.JobApplication) table.Row {
-	remoteToString := func(remote *model.RemoteType) string {
-		if remote == nil {
-			return "Unknown"
-		} else {
-			return string(*remote)
-		}
-	}
-	payToString := func(pay *model.Pay) string {
-		if pay == nil {
-			return "Unknown"
-		} else {
-			return job.Pay.String()
-		}
-	}
-	rankingToString := func(ranking *int) string {
-		if ranking == nil {
-			return "0"
-		} else {
-			return strconv.Itoa(*ranking)
-		}
-	}
+func constructRow(stored model.StoredJobApplication) table.Row {
+	job := stored.JobApplication
 
 	return table.Row{
-		strconv.Itoa(int(job.ID)),
+		strconv.Itoa(int(stored.ID)),
 		job.CompanyName,
 		job.Position,
 		job.ApplicationDate.Format("2006-01-02"),
 		string(job.Status),
 		strconv.FormatBool(job.Referral),
-		remoteToString(job.Remote),
-		payToString(job.Pay),
-		rankingToString(job.Ranking),
-		"No notes",
-		"No link",
-		"No website",
+		string(job.WorkMode),
+		job.Pay.String(),
+		strconv.Itoa(int(job.Rank)),
+		job.Notes,
+		job.JobPostingLink,
+		job.CompanyWebsiteLink,
 	}
 }
 
-func InitJobList(jobs []model.JobApplication) JobList {
+func InitJobList(jobs []model.StoredJobApplication) JobList {
 	columns := []table.Column{
 		{Title: "ID"},
 		{Title: "Company Name"},
@@ -126,12 +106,7 @@ func (jl *JobList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return jl, tea.Quit
-		case "esc":
-			if jl.JobsTable.Focused() {
-				jl.JobsTable.Blur()
-			} else {
-				jl.JobsTable.Focus()
-			}
+
 		}
 	}
 	jl.JobsTable, cmd = jl.JobsTable.Update(msg)

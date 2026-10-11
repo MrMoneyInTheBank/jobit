@@ -44,14 +44,13 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 		model.StatusAccepted,
 	}
 
-	remoteTypes := []model.RemoteType{
-		model.RemoteRemote,
-		model.RemoteHybrid,
-		model.RemoteOnsite,
+	remoteTypes := []model.WorkMode{
+		model.WorkModeRemote,
+		model.WorkModeHybrid,
+		model.WorkModeOnsite,
 	}
 
 	app := model.JobApplication{
-		ID:              r.Int63(),
 		CompanyName:     companyNames[r.Intn(len(companyNames))],
 		Position:        positions[r.Intn(len(positions))],
 		ApplicationDate: now.AddDate(0, 0, -r.Intn(180)), // last 6 months
@@ -61,12 +60,12 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 
 	if r.Float64() < 0.8 {
 		rt := remoteTypes[r.Intn(len(remoteTypes))]
-		app.Remote = &rt
+		app.WorkMode = rt
 	}
 
 	if r.Float64() < 0.7 {
 		loc := locations[r.Intn(len(locations))]
-		app.Location = &loc
+		app.Location = loc
 	}
 
 	if r.Float64() < 0.6 {
@@ -83,21 +82,21 @@ func randomJobApplication(r *rand.Rand) model.JobApplication {
 
 	if r.Float64() < 0.5 {
 		rank := 1 + r.Intn(5)
-		app.Ranking = &rank
+		app.Rank = model.Ranking(rank)
 	}
 
 	if r.Float64() < 0.4 {
 		note := "Reached out to recruiter on LinkedIn"
-		app.Notes = &note
+		app.Notes = note
 	}
 
 	if r.Float64() < 0.5 {
 		jp := "https://jobs.example.com/posting"
-		app.JobPostingLink = &jp
+		app.JobPostingLink = jp
 	}
 	if r.Float64() < 0.5 {
 		ws := "https://www." + app.CompanyName + ".com"
-		app.CompanyWebsiteLink = &ws
+		app.CompanyWebsiteLink = ws
 	}
 
 	return app
@@ -110,20 +109,15 @@ func SeedDB(db *sql.DB, count int) error {
 		return err
 	}
 
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
+	defer tx.Rollback()
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for range count {
 		app := randomJobApplication(r)
 		boundedApp := bindJobApplication(app)
-		if _, err2 := tx.ExecContext(ctx, insertQuery, boundedApp.insertArgs()...); err != nil {
+		if _, err2 := tx.ExecContext(ctx, insertQuery, boundedApp.insertArgs()...); err2 != nil {
 			return err2
 		}
 	}
-	err = tx.Commit()
-	return nil
+	return tx.Commit()
 }

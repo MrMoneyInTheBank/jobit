@@ -10,7 +10,7 @@ import (
 )
 
 func OpenDB(dsn *string) (*sql.DB, error) {
-	finalDSN := ":memory:"
+	finalDSN := "./jobit.db"
 
 	if env := os.Getenv("JOBIT_DB_DSN"); env != "" {
 		finalDSN = env
@@ -62,13 +62,13 @@ func AddJobApplication(db *sql.DB, app model.JobApplication) (int64, error) {
 	return id, nil
 }
 
-func GetJobApplications(db *sql.DB) ([]model.JobApplication, error) {
+func GetJobApplications(db *sql.DB) ([]model.StoredJobApplication, error) {
 	rows, err := db.Query(getAllQuery)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var got []model.JobApplication
+	var got []model.StoredJobApplication
 	for rows.Next() {
 		var app boundJobApplication
 		err := rows.Scan(
@@ -99,7 +99,7 @@ func GetJobApplications(db *sql.DB) ([]model.JobApplication, error) {
 	return got, nil
 }
 
-func GetJobApplicationByID(db *sql.DB, id int64) (*model.JobApplication, error) {
+func GetJobApplicationByID(db *sql.DB, id int64) (*model.StoredJobApplication, error) {
 	if id <= 0 {
 		return nil, ErrInvalidID
 	}
@@ -133,13 +133,13 @@ func GetJobApplicationByID(db *sql.DB, id int64) (*model.JobApplication, error) 
 
 func PatchJobApplication(
 	db *sql.DB,
-	app model.JobApplication,
+	app model.StoredJobApplication,
 	patch model.JobApplicationPatch,
 ) error {
 	if app.ID <= 0 {
 		return ErrInvalidID
 	}
-	app.Apply(patch)
+	app.JobApplication.Apply(patch)
 	boundedApp, err := bindJobApplicationPatch(app)
 	if err != nil {
 		return err

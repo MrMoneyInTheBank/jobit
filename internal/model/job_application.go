@@ -102,3 +102,74 @@ func sameDay(t1, t2 time.Time) bool {
 	y2, m2, d2 := t2.UTC().Date()
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
+
+// Equal compares application data, treating dates as UTC calendar days.
+func (a JobApplication) Equal(b JobApplication) bool {
+	return a.CompanyName == b.CompanyName &&
+		a.Position == b.Position &&
+		a.Location == b.Location &&
+		payEq(a.Pay, b.Pay) &&
+		a.WorkMode == b.WorkMode &&
+		sameDay(a.ApplicationDate, b.ApplicationDate) &&
+		a.Status == b.Status &&
+		a.Rank == b.Rank &&
+		a.Referral == b.Referral &&
+		a.Notes == b.Notes &&
+		a.JobPostingLink == b.JobPostingLink &&
+		a.CompanyWebsiteLink == b.CompanyWebsiteLink
+}
+
+// JobApplicationPatch uses nil for unchanged fields. Pay points to nil to clear pay.
+type JobApplicationPatch struct {
+	CompanyName        *string
+	Position           *string
+	Location           *string
+	Pay                **Pay
+	WorkMode           *WorkMode
+	ApplicationDate    *time.Time
+	Status             *Status
+	Rank               *Ranking
+	Referral           *bool
+	Notes              *string
+	JobPostingLink     *string
+	CompanyWebsiteLink *string
+}
+
+func (a *JobApplication) Apply(p JobApplicationPatch) {
+	if p.CompanyName != nil {
+		a.CompanyName = *p.CompanyName
+	}
+	if p.Position != nil {
+		a.Position = *p.Position
+	}
+	if p.Location != nil {
+		a.Location = *p.Location
+	}
+	if p.Pay != nil {
+		a.Pay = *p.Pay
+	}
+	if p.WorkMode != nil {
+		a.WorkMode = *p.WorkMode
+	}
+	if p.ApplicationDate != nil {
+		a.ApplicationDate = *p.ApplicationDate
+	}
+	if p.Status != nil {
+		a.Status = *p.Status
+	}
+	if p.Rank != nil {
+		a.Rank = *p.Rank
+	}
+	if p.Referral != nil {
+		a.Referral = *p.Referral
+	}
+	if p.Notes != nil {
+		a.Notes = *p.Notes
+	}
+	if p.JobPostingLink != nil {
+		a.JobPostingLink = *p.JobPostingLink
+	}
+	if p.CompanyWebsiteLink != nil {
+		a.CompanyWebsiteLink = *p.CompanyWebsiteLink
+	}
+}
