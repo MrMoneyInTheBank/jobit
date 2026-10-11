@@ -123,3 +123,9 @@ Local verification on macOS used Go 1.25.6, CGO_ENABLED=1, /usr/bin/clang,
 and the Command Line Tools MacOSX15.0 SDK. The sandbox disallowed the normal
 Go build cache, so checks used `GOCACHE=/tmp/jobit-go-cache`. This is a sandbox
 workaround, not a SQLite requirement. Formatting, tests, and vet pass using the shared check script.
+
+Persistence reads are ordered by ascending database ID. Invalid stored dates
+return an error identifying the row. Startup errors are written to stderr.
+Persistence tests cover empty databases, DSN precedence, file reopen, optional
+fields, invalid IDs, missing rows, schema failures, and seed rollback on insert
+and commit failures.
