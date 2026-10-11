@@ -26,6 +26,8 @@ func OpenDB(dsn *string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	database.SetMaxOpenConns(1)
+	database.SetMaxIdleConns(1)
 
 	if err := database.Ping(); err != nil {
 		database.Close()
@@ -35,31 +37,43 @@ func OpenDB(dsn *string) (*sql.DB, error) {
 }
 
 func InitDB(db *sql.DB) error {
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-
 	var version int
 	if err := db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version >= 1 {
+	switch version {
+	case 2:
 		_, err := db.Exec(schemaSQL)
 		return err
+	case 0:
+		var tableName string
+		err := db.QueryRow("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'job_applications'").Scan(&tableName)
+		if err == nil {
+			return fmt.Errorf("legacy job_applications schema found; back up and remove the old database before starting Jobit")
+		}
+		if err != sql.ErrNoRows {
+			return err
+		}
+	case 1:
+		// Rename the misspelled column without changing stored records.
+	default:
+		return fmt.Errorf("unsupported database schema version %d", version)
 	}
 
-	// Version zero is the old nullable schema (or a new database). Discard its rows.
 	transaction, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer transaction.Rollback()
-	if _, err := transaction.Exec("DROP TABLE IF EXISTS job_applications"); err != nil {
-		return err
+	if version == 1 {
+		if _, err := transaction.Exec("ALTER TABLE job_applications RENAME COLUMN job_positing_link TO job_posting_link"); err != nil {
+			return fmt.Errorf("upgrade database schema: %w", err)
+		}
 	}
 	if _, err := transaction.Exec(schemaSQL); err != nil {
 		return err
 	}
-	if _, err := transaction.Exec("PRAGMA user_version = 1"); err != nil {
+	if _, err := transaction.Exec("PRAGMA user_version = 2"); err != nil {
 		return err
 	}
 	if err := transaction.Commit(); err != nil {

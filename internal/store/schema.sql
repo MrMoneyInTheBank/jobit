@@ -16,6 +16,6 @@ CREATE TABLE IF NOT EXISTS job_applications (
   pay_currency TEXT,
   ranking INTEGER NOT NULL CHECK (ranking BETWEEN 1 AND 5),
   notes TEXT NOT NULL DEFAULT '',
-  job_positing_link TEXT NOT NULL DEFAULT '',
+  job_posting_link TEXT NOT NULL DEFAULT '',
   company_website_link TEXT NOT NULL DEFAULT ''
 );

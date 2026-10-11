@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
@@ -91,7 +92,8 @@ func randomJobApplication(randomGenerator *rand.Rand) model.JobApplication {
 		application.JobPostingLink = postingLink
 	}
 	if randomGenerator.Float64() < 0.5 {
-		websiteLink := "https://www." + application.CompanyName + ".com"
+		companyDomain := strings.ToLower(strings.ReplaceAll(application.CompanyName, " ", ""))
+		websiteLink := "https://www." + companyDomain + ".com"
 		application.CompanyWebsiteLink = websiteLink
 	}
 
@@ -110,6 +112,9 @@ func SeedDB(db *sql.DB, count int) error {
 	randomGenerator := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for range count {
 		application := randomJobApplication(randomGenerator)
+		if err := validateApplication(application); err != nil {
+			return err
+		}
 		if _, err2 := transaction.ExecContext(ctx, insertQuery, applicationArgs(application)...); err2 != nil {
 			return err2
 		}

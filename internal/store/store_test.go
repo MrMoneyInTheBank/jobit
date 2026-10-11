@@ -45,6 +45,9 @@ func newTestDB(t *testing.T) *sql.DB {
 
 func TestOpenDB(t *testing.T) {
 	db := mustOpenDB(t)
+	if db.Stats().MaxOpenConnections != 1 {
+		t.Fatal("OpenDB did not configure the connection limit")
+	}
 	if err := db.Ping(); err != nil {
 		t.Fatalf("Could not ping database: %v", err)
 	}

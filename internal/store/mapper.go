@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
@@ -33,7 +35,7 @@ func applicationArgs(app model.JobApplication) []any {
 }
 
 func validateApplication(app model.JobApplication) error {
-	if app.CompanyName == "" || app.Position == "" {
+	if strings.TrimSpace(app.CompanyName) == "" || strings.TrimSpace(app.Position) == "" {
 		return fmt.Errorf("company and position are required")
 	}
 	if app.ApplicationDate.IsZero() {
@@ -51,6 +53,37 @@ func validateApplication(app model.JobApplication) error {
 	case "", model.WorkModeRemote, model.WorkModeHybrid, model.WorkModeOnsite:
 	default:
 		return fmt.Errorf("invalid work mode %q", app.WorkMode)
+	}
+	if app.Pay != nil {
+		if app.Pay.Min != nil && *app.Pay.Min < 0 {
+			return fmt.Errorf("minimum pay must be nonnegative")
+		}
+		if app.Pay.Max != nil && *app.Pay.Max < 0 {
+			return fmt.Errorf("maximum pay must be nonnegative")
+		}
+		if app.Pay.Min != nil && app.Pay.Max != nil && *app.Pay.Min > *app.Pay.Max {
+			return fmt.Errorf("maximum pay must be at least minimum pay")
+		}
+		if app.Pay.Currency != nil {
+			currency := *app.Pay.Currency
+			if len(currency) != 3 {
+				return fmt.Errorf("currency must be three uppercase letters")
+			}
+			for _, character := range currency {
+				if character < 'A' || character > 'Z' {
+					return fmt.Errorf("currency must be three uppercase letters")
+				}
+			}
+		}
+	}
+	for _, link := range []string{app.JobPostingLink, app.CompanyWebsiteLink} {
+		if link == "" {
+			continue
+		}
+		parsedURL, err := url.ParseRequestURI(link)
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Hostname() == "" {
+			return fmt.Errorf("links must use a full http:// or https:// URL")
+		}
 	}
 	return nil
 }

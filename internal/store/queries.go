@@ -14,7 +14,7 @@ const insertQuery string = `
 			pay_currency,
 			ranking,
 			notes,
-			job_positing_link,
+			job_posting_link,
 			company_website_link
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
@@ -34,7 +34,7 @@ const getAllQuery string = `
 			pay_currency,
 			ranking,
 			notes,
-			job_positing_link,
+			job_posting_link,
 			company_website_link
 		FROM job_applications
  ORDER BY id ASC
@@ -55,7 +55,7 @@ const getByIDQuery string = `
 			pay_currency,
 			ranking,
 			notes,
-			job_positing_link,
+			job_posting_link,
 			company_website_link
 		FROM job_applications
 		WHERE id = ?
@@ -77,7 +77,7 @@ const updateQuery string = `
 			pay_currency = ?,
 			ranking = ?,
 			notes = ?,
-			job_positing_link = ?,
+			job_posting_link = ?,
 			company_website_link = ?
 		WHERE id = ?
 	`
