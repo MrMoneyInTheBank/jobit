@@ -1,23 +1,42 @@
 version: "3"
 
+env:
+  CGO_ENABLED: "1"
+
 tasks:
   run-dev:
-    desc: Run jobit in dev mode
+    desc: Run jobit (JOBIT_DB_DSN overrides ./jobit.db)
     cmds:
-      - clear
-      - JOBIT_DB_DSN=":memory:" go run ./cmd/jobit
+      - go run ./cmd/jobit
   run-prod:
-    desc: Run jobit in prod mode
+    desc: Build and run jobit (JOBIT_DB_DSN overrides ./jobit.db)
     cmds:
-      - clear
-      - JOBIT_DB_DSN="./jobit.db" go run ./cmd/jobit
+      - task: build
+      - ./bin/jobit
+  build:
+    cmds:
+      - go build -o bin/jobit ./cmd/jobit
   seed:
-    desc: Seed database
+    desc: Add 50 sample applications to JOBIT_DB_DSN or ./jobit.db
     cmds:
-      - clear
       - go run ./cmd/seed
-  test:
-    desc: Run tests
+  fmt:
     cmds:
-      - go test ./...
-
+      - gofmt -w ./cmd ./internal
+  fmt-check:
+    cmds:
+      - sh scripts/check.sh fmt
+  lint:
+    desc: Run the Go vet static checks
+    cmds:
+      - sh scripts/check.sh lint
+  test:
+    cmds:
+      - sh scripts/check.sh test
+  check:
+    cmds:
+      - sh scripts/check.sh all
+  hooks:
+    desc: Enable repository pre-commit hook
+    cmds:
+      - git config --local core.hooksPath .githooks

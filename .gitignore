@@ -44,3 +44,5 @@ todo.md
 *.log
 
 todo.txt
+
+/bin/

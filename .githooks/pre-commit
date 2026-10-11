@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+if git diff --cached --quiet -- '*.go' go.mod go.sum; then
+    exit 0
+fi
+# Check the staged snapshot, including partially staged files.
+snapshot=$(mktemp -d)
+trap 'rm -rf "$snapshot"' EXIT HUP INT TERM
+git checkout-index --all --prefix="$snapshot/"
+cd "$snapshot"
+sh scripts/check.sh fmt
+sh scripts/check.sh lint

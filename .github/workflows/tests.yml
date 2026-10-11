@@ -1,26 +1,26 @@
-name: Tests 
+name: Go checks
 
 on:
   push:
-    branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Install system dependencies (CGO for sqlite3)
+      - name: Install C compiler for SQLite
         run: sudo apt-get update && sudo apt-get install -y build-essential
-
       - name: Download Go modules
         run: go mod download
-
-      - name: Run tests
-        run: go test ./...
+      - name: Formatting, lint, and tests
+        run: sh scripts/check.sh all
