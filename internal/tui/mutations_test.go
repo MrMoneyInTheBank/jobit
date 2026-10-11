@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
@@ -11,8 +10,10 @@ import (
 )
 
 func TestEditDeletePersistence(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "edit.db")
-	db, err := store.OpenDB(&path)
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
+	db, err := store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +76,7 @@ func TestEditDeletePersistence(t *testing.T) {
 	if err = db.Close(); err != nil {
 		t.Fatal(err)
 	}
-	db, err = store.OpenDB(&path)
+	db, err = store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +110,7 @@ func TestEditDeletePersistence(t *testing.T) {
 	if err = db.Close(); err != nil {
 		t.Fatal(err)
 	}
-	db, err = store.OpenDB(&path)
+	db, err = store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -145,8 +144,10 @@ func TestFormKeyboardAndSmallScreens(t *testing.T) {
 }
 
 func TestFullFormPersistence(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "applications.db")
-	db, err := store.OpenDB(&path)
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
+	db, err := store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +214,7 @@ func TestFullFormPersistence(t *testing.T) {
 	if err = db.Close(); err != nil {
 		t.Fatal(err)
 	}
-	db, err = store.OpenDB(&path)
+	db, err = store.OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}

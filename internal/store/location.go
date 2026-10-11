@@ -38,14 +38,3 @@ func databasePath(platform string, getenv func(string) string, home func() (stri
 	}
 	return filepath.Join(baseDirectory, "jobit", "jobit.db"), nil
 }
-
-// DatabaseDSN reports the effective location without opening or creating it.
-func DatabaseDSN(explicit *string) (string, error) {
-	if explicit != nil && *explicit != "" {
-		return *explicit, nil
-	}
-	if env := os.Getenv("JOBIT_DB_DSN"); env != "" {
-		return env, nil
-	}
-	return DefaultDatabasePath()
-}

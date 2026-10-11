@@ -3,7 +3,7 @@ package store
 import (
 	"database/sql"
 	"errors"
-	"path/filepath"
+	"os"
 	"strings"
 	"testing"
 
@@ -11,84 +11,36 @@ import (
 )
 
 func TestFilePersistenceAndConfiguration(t *testing.T) {
-	t.Chdir(t.TempDir())
-	t.Setenv("JOBIT_DB_DSN", "")
-	t.Setenv("HOME", t.TempDir())
-	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	defaultPath, err := DefaultDatabasePath()
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
+	path, err := DefaultDatabasePath()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range []struct{ name, env, explicit, file string }{
-		{"default", "", "", defaultPath},
-		{"environment", "environment.db", "", "environment.db"},
-		{"explicit", "unused.db", "explicit.db", "explicit.db"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("JOBIT_DB_DSN", tc.env)
-			db, err := OpenDB(&tc.explicit)
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() {
-				if db != nil {
-					db.Close()
-				}
-			})
-			mustInitDB(t, db)
-			rows, err := GetJobApplications(db)
-			if err != nil || len(rows) != 0 {
-				t.Fatalf("empty database: %v %v", rows, err)
-			}
-			apps := []model.JobApplication{testApp, testApp}
-			apps[1].Location = "London"
-			apps[1].WorkMode = model.WorkModeRemote
-			apps[1].Rank = 3
-			apps[1].Notes = "Notes"
-			apps[1].Referral = true
-			apps[1].JobPostingLink = "https://example.com/job"
-			apps[1].CompanyWebsiteLink = "https://example.com"
-			apps[1].Pay = &model.Pay{Min: ptr(0), Currency: ptr("GBP")}
-			ids := make([]int64, len(apps))
-			for i, app := range apps {
-				ids[i], err = AddJobApplication(db, app)
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := db.Close(); err != nil {
-				t.Fatal(err)
-			}
-			// Reopen the expected path explicitly to prove which file was selected.
-			db, err = OpenDB(ptr(tc.file))
-			if err != nil {
-				t.Fatal(err)
-			}
-			mustInitDB(t, db)
-			// Reverse unspecified SQLite scan ordering to ensure ORDER BY is effective.
-			if _, err = db.Exec("PRAGMA reverse_unordered_selects=ON"); err != nil {
-				t.Fatal(err)
-			}
-			rows, err = GetJobApplications(db)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if len(rows) != len(apps) {
-				t.Fatalf("actual %d rows", len(rows))
-			}
-			for i, app := range apps {
-				if rows[i].ID != ids[i] || !rows[i].JobApplication.Equal(app) {
-					t.Fatalf("list mismatch: %+v", rows[i])
-				}
-				actual, err := GetJobApplicationByID(db, ids[i])
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !actual.JobApplication.Equal(app) {
-					t.Fatalf("lookup mismatch: %+v", actual)
-				}
-			}
-		})
+	db, err := OpenDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustInitDB(t, db)
+	id, err := AddJobApplication(db, testApp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal(err)
+	}
+	db, err = OpenDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	actual, err := GetJobApplicationByID(db, id)
+	if err != nil || !actual.JobApplication.Equal(testApp) {
+		t.Fatalf("reopened application: %+v %v", actual, err)
 	}
 }
 
@@ -135,8 +87,10 @@ func TestPersistenceErrors(t *testing.T) {
 	if err = InitDB(db); err == nil {
 		t.Fatal("initialized closed database")
 	}
-	if _, err = OpenDB(ptr(filepath.Join(t.TempDir(), "missing", "db"))); err == nil {
-		t.Fatal("opened invalid path")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	if _, err = OpenReadDB(); err == nil {
+		t.Fatal("read-only open created missing database")
 	}
 }
 

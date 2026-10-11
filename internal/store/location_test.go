@@ -32,15 +32,14 @@ func TestDefaultDatabaseIndependentOfWorkingDirectory(t *testing.T) {
 	for _, key := range []string{"HOME", "XDG_DATA_HOME"} {
 		t.Setenv(key, root)
 	}
-	t.Setenv("JOBIT_DB_DSN", "")
-	path, err := DatabaseDSN(nil)
+	path, err := DefaultDatabasePath()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err = os.Stat(filepath.Dir(path)); !os.IsNotExist(err) {
 		t.Fatal("resolving location created data")
 	}
-	db, err := OpenDB(nil)
+	db, err := OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,25 +52,12 @@ func TestDefaultDatabaseIndependentOfWorkingDirectory(t *testing.T) {
 	}
 	db.Close()
 	t.Chdir(t.TempDir())
-	db, err = OpenDB(nil)
+	db, err = OpenDB()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer db.Close()
 	if _, err = GetJobApplicationByID(db, id); err != nil {
 		t.Fatal("working directory changed database:", err)
-	}
-}
-
-func TestOverrideNeedsNoDefaultLocation(t *testing.T) {
-	t.Setenv("HOME", "")
-	t.Setenv("XDG_DATA_HOME", "")
-	t.Setenv("JOBIT_DB_DSN", ":memory:")
-	if actual, err := DatabaseDSN(nil); err != nil || actual != ":memory:" {
-		t.Fatalf("%q %v", actual, err)
-	}
-	explicit := "file:override?mode=memory&cache=shared"
-	if actual, err := DatabaseDSN(&explicit); err != nil || actual != explicit {
-		t.Fatalf("%q %v", actual, err)
 	}
 }

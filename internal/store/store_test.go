@@ -20,7 +20,7 @@ var testApp model.JobApplication = model.JobApplication{
 
 func mustOpenDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := OpenDB(ptr(":memory:"))
+	db, err := openSQLite(":memory:")
 	if err != nil {
 		t.Fatalf("Could not open database: %v", err)
 	}
@@ -44,7 +44,13 @@ func newTestDB(t *testing.T) *sql.DB {
 }
 
 func TestOpenDB(t *testing.T) {
-	db := mustOpenDB(t)
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	db, err := OpenDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
 	if db.Stats().MaxOpenConnections != 1 {
 		t.Fatal("OpenDB did not configure the connection limit")
 	}
@@ -61,7 +67,7 @@ func TestInitDB(t *testing.T) {
 }
 
 func TestCloseDB(t *testing.T) {
-	db, err := OpenDB(ptr(":memory:"))
+	db, err := openSQLite(":memory:")
 	t.Cleanup(func() { db.Close() })
 	if err != nil {
 		t.Fatalf("Could not open database: %v", err)

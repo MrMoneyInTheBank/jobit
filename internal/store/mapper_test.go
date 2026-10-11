@@ -2,7 +2,6 @@ package store
 
 import (
 	"database/sql"
-	"strings"
 	"testing"
 
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
@@ -48,37 +47,6 @@ func TestLegacySchemaIsPreserved(t *testing.T) {
 	var count int
 	if err := db.QueryRow("SELECT COUNT(*) FROM job_applications").Scan(&count); err != nil || count != 1 {
 		t.Fatalf("legacy rows changed: count=%d err=%v", count, err)
-	}
-	if err := db.QueryRow("PRAGMA user_version").Scan(&count); err != nil || count != 0 {
-		t.Fatalf("legacy version changed: version=%d err=%v", count, err)
-	}
-}
-
-func TestVersionOneColumnMigrationPreservesRows(t *testing.T) {
-	db := mustOpenDB(t)
-	legacySchema := strings.Replace(schemaSQL, "job_posting_link", "job_positing_link", 1)
-	if _, err := db.Exec(legacySchema); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.Exec("PRAGMA user_version = 1"); err != nil {
-		t.Fatal(err)
-	}
-	legacyInsert := strings.Replace(insertQuery, "job_posting_link", "job_positing_link", 1)
-	if _, err := db.Exec(legacyInsert, applicationArgs(testApp)...); err != nil {
-		t.Fatal(err)
-	}
-	if err := InitDB(db); err != nil {
-		t.Fatal(err)
-	}
-	rows, err := GetJobApplications(db)
-	if err != nil || len(rows) != 1 {
-		t.Fatalf("migrated rows lost: %v %v", rows, err)
-	}
-	if !rows[0].JobApplication.Equal(testApp) {
-		t.Fatalf("migrated row changed: %+v", rows[0])
-	}
-	if err := InitDB(db); err != nil {
-		t.Fatalf("migration was not idempotent: %v", err)
 	}
 }
 

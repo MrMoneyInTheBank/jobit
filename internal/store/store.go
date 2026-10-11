@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -11,18 +12,29 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/model"
 )
 
-func OpenDB(dsn *string) (*sql.DB, error) {
-	databaseDSN, err := DatabaseDSN(dsn)
+func OpenDB() (*sql.DB, error) {
+	databasePath, err := DefaultDatabasePath()
 	if err != nil {
 		return nil, fmt.Errorf("resolve database location: %w", err)
 	}
-	if (dsn == nil || *dsn == "") && os.Getenv("JOBIT_DB_DSN") == "" {
-		if err := os.MkdirAll(filepath.Dir(databaseDSN), 0o700); err != nil {
-			return nil, fmt.Errorf("create database directory: %w", err)
-		}
+	if err := os.MkdirAll(filepath.Dir(databasePath), 0o700); err != nil {
+		return nil, fmt.Errorf("create database directory: %w", err)
 	}
+	return openSQLite(databasePath)
+}
 
-	database, err := sql.Open("sqlite3", databaseDSN)
+// OpenReadDB opens the fixed database location without creating or changing it.
+func OpenReadDB() (*sql.DB, error) {
+	databasePath, err := DefaultDatabasePath()
+	if err != nil {
+		return nil, fmt.Errorf("resolve database location: %w", err)
+	}
+	readOnlyDSN := (&url.URL{Scheme: "file", Path: databasePath, RawQuery: "mode=ro"}).String()
+	return openSQLite(readOnlyDSN)
+}
+
+func openSQLite(dsn string) (*sql.DB, error) {
+	database, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -37,47 +49,41 @@ func OpenDB(dsn *string) (*sql.DB, error) {
 }
 
 func InitDB(db *sql.DB) error {
-	var version int
-	if err := db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+	if _, err := db.Exec(schemaSQL); err != nil {
 		return err
 	}
-	switch version {
-	case 2:
-		_, err := db.Exec(schemaSQL)
-		return err
-	case 0:
-		var tableName string
-		err := db.QueryRow("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'job_applications'").Scan(&tableName)
-		if err == nil {
-			return fmt.Errorf("legacy job_applications schema found; back up and remove the old database before starting Jobit")
-		}
-		if err != sql.ErrNoRows {
-			return err
-		}
-	case 1:
-		// Rename the misspelled column without changing stored records.
-	default:
-		return fmt.Errorf("unsupported database schema version %d", version)
-	}
+	return CheckSchema(db)
+}
 
-	transaction, err := db.Begin()
+// CheckSchema verifies that a database uses the current layout without writing to it.
+func CheckSchema(db *sql.DB) error {
+	rows, err := db.Query("PRAGMA table_info(job_applications)")
 	if err != nil {
 		return err
 	}
-	defer transaction.Rollback()
-	if version == 1 {
-		if _, err := transaction.Exec("ALTER TABLE job_applications RENAME COLUMN job_positing_link TO job_posting_link"); err != nil {
-			return fmt.Errorf("upgrade database schema: %w", err)
+	defer rows.Close()
+
+	expected := []string{"id", "company_name", "position", "application_date", "status", "referral", "remote", "location", "pay_min", "pay_max", "pay_currency", "ranking", "notes", "job_posting_link", "company_website_link"}
+	var actual []string
+	for rows.Next() {
+		var index, notNull, primaryKey int
+		var name, columnType string
+		var defaultValue sql.NullString
+		if err := rows.Scan(&index, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
+			return err
 		}
+		actual = append(actual, name)
 	}
-	if _, err := transaction.Exec(schemaSQL); err != nil {
+	if err := rows.Err(); err != nil {
 		return err
 	}
-	if _, err := transaction.Exec("PRAGMA user_version = 2"); err != nil {
-		return err
+	if len(actual) != len(expected) {
+		return fmt.Errorf("database schema does not match this Jobit build; back up and remove the old database to start fresh")
 	}
-	if err := transaction.Commit(); err != nil {
-		return err
+	for index, name := range expected {
+		if actual[index] != name {
+			return fmt.Errorf("database schema does not match this Jobit build; back up and remove the old database to start fresh")
+		}
 	}
 	return nil
 }
