@@ -10,6 +10,7 @@ tasks:
       - task: build
       - ./bin/jobit
   build:
+    desc: Build jobit into bin/jobit
     cmds:
       - go build -o bin/jobit ./cmd/jobit
   install:
@@ -17,9 +18,11 @@ tasks:
     cmds:
       - go install ./cmd/jobit
   fmt:
+    desc: Format Go source files
     cmds:
       - gofmt -w ./cmd ./internal
   fmt-check:
+    desc: Check Go formatting
     cmds:
       - sh scripts/check.sh fmt
   lint:
@@ -27,9 +30,11 @@ tasks:
     cmds:
       - sh scripts/check.sh lint
   test:
+    desc: Run Go tests
     cmds:
       - sh scripts/check.sh test
   check:
+    desc: Run formatting, vet, and tests
     cmds:
       - sh scripts/check.sh all
   hooks:
