@@ -122,36 +122,6 @@ func TestVersionAndExportFlags(t *testing.T) {
 	}
 }
 
-func TestExportDoesNotResetLegacyDatabase(t *testing.T) {
-	root := t.TempDir()
-	t.Setenv("HOME", root)
-	t.Setenv("XDG_DATA_HOME", root)
-	database, err := store.OpenDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := database.Exec("CREATE TABLE job_applications (id INTEGER PRIMARY KEY); INSERT INTO job_applications DEFAULT VALUES"); err != nil {
-		t.Fatal(err)
-	}
-	if err := database.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	var output bytes.Buffer
-	if err := exportCSV("-", &output); err == nil {
-		t.Fatal("export silently reset a legacy database")
-	}
-	database, err = store.OpenDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer database.Close()
-	var count int
-	if err := database.QueryRow("SELECT COUNT(*) FROM job_applications").Scan(&count); err != nil || count != 1 {
-		t.Fatalf("export changed legacy rows: count=%d err=%v", count, err)
-	}
-}
-
 func TestExportMissingDatabaseDoesNotCreateOne(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("HOME", root)

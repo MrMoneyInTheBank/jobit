@@ -36,59 +36,6 @@ func TestModelMappingAndSchema(t *testing.T) {
 	}
 }
 
-func TestLegacySchemaIsPreserved(t *testing.T) {
-	db := mustOpenDB(t)
-	if _, err := db.Exec("CREATE TABLE job_applications (id INTEGER PRIMARY KEY, ranking INTEGER); INSERT INTO job_applications (ranking) VALUES (NULL)"); err != nil {
-		t.Fatal(err)
-	}
-	if err := InitDB(db); err == nil {
-		t.Fatal("legacy database was silently accepted")
-	}
-	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM job_applications").Scan(&count); err != nil || count != 1 {
-		t.Fatalf("legacy rows changed: count=%d err=%v", count, err)
-	}
-}
-
-func TestEmptyLegacySchemaIsRebuilt(t *testing.T) {
-	root := t.TempDir()
-	t.Setenv("HOME", root)
-	t.Setenv("XDG_DATA_HOME", root)
-	db, err := OpenDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	if _, err := db.Exec(`CREATE TABLE job_applications (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		company_name TEXT NOT NULL,
-		position TEXT NOT NULL,
-		application_date TEXT NOT NULL,
-		status TEXT NOT NULL,
-		referral INTEGER NOT NULL,
-		remote TEXT,
-		location TEXT,
-		pay_min INTEGER,
-		pay_max INTEGER,
-		pay_currency TEXT,
-		ranking INTEGER,
-		notes TEXT,
-		job_positing_link TEXT,
-		company_website_link TEXT
-	)`); err != nil {
-		t.Fatal(err)
-	}
-	if err := InitDB(db); err != nil {
-		t.Fatal(err)
-	}
-	if err := CheckSchema(db); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := AddJobApplication(db, testApp); err != nil {
-		t.Fatal("rebuilt schema cannot save an application:", err)
-	}
-}
-
 func TestRequiredDatabaseValues(t *testing.T) {
 	db := newTestDB(t)
 	for _, rank := range []model.Ranking{0, 6} {

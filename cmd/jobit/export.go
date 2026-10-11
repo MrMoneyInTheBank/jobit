@@ -37,9 +37,6 @@ func exportCSV(path string, stdout io.Writer) (err error) {
 	}
 	defer database.Close()
 
-	if err = store.CheckSchema(database); err != nil {
-		return err
-	}
 	applications, err := store.GetJobApplications(database)
 	if err != nil {
 		return err

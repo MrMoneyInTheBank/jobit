@@ -18,24 +18,6 @@ import (
 	"github.com/MrMoneyInTheBank/jobit/internal/store"
 )
 
-const olderSchema = `CREATE TABLE job_applications (
- id INTEGER PRIMARY KEY AUTOINCREMENT,
- company_name TEXT NOT NULL,
- position TEXT NOT NULL,
- application_date TEXT NOT NULL,
- status TEXT NOT NULL,
- referral INTEGER NOT NULL,
- remote TEXT,
- location TEXT,
- pay_min INTEGER,
- pay_max INTEGER,
- pay_currency TEXT,
- ranking INTEGER,
- notes TEXT,
- job_positing_link TEXT,
- company_website_link TEXT
-)`
-
 func buildReleaseBinary(t *testing.T) string {
 	t.Helper()
 	binary := filepath.Join(t.TempDir(), "jobit")
@@ -133,8 +115,8 @@ func TestReleaseExecutableStartup(t *testing.T) {
 			t.Fatalf("fresh TUI failed: %v\n%s", err, output)
 		}
 		database := fixtureDatabase(t, home)
-		if err := store.CheckSchema(database); err != nil {
-			t.Fatal("fresh database schema:", err)
+		if _, err := store.GetJobApplications(database); err != nil {
+			t.Fatal("fresh database cannot be read:", err)
 		}
 	})
 
@@ -191,47 +173,6 @@ func TestReleaseExecutableStartup(t *testing.T) {
 		}
 	})
 
-	t.Run("empty older database", func(t *testing.T) {
-		home := t.TempDir()
-		database := fixtureDatabase(t, home)
-		if _, err := database.Exec(olderSchema); err != nil {
-			t.Fatal(err)
-		}
-		output, err := runInTerminal(t, binary, home)
-		if err != nil || !strings.Contains(output, "JOBIT") {
-			t.Fatalf("empty older database blocked TUI: %v\n%s", err, output)
-		}
-		if err := store.CheckSchema(database); err != nil {
-			t.Fatal("older empty schema was not refreshed:", err)
-		}
-	})
-
-	t.Run("nonempty older database", func(t *testing.T) {
-		home := t.TempDir()
-		database := fixtureDatabase(t, home)
-		if _, err := database.Exec(olderSchema); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := database.Exec(`INSERT INTO job_applications (company_name, position, application_date, status, referral, ranking) VALUES ('Acme', 'Engineer', '2026-10-12', 'submitted', 0, 3)`); err != nil {
-			t.Fatal(err)
-		}
-		before, err := os.ReadFile(isolatedDatabasePath(home))
-		if err != nil {
-			t.Fatal(err)
-		}
-		output, _ := runInTerminal(t, binary, home)
-		if !strings.Contains(output, "database schema does not match") || strings.Contains(output, "A fresh start") {
-			t.Fatalf("nonempty old database was accepted: %s", output)
-		}
-		var count int
-		if err := database.QueryRow("SELECT COUNT(*) FROM job_applications").Scan(&count); err != nil || count != 1 {
-			t.Fatalf("older application changed: count=%d err=%v", count, err)
-		}
-		after, err := os.ReadFile(isolatedDatabasePath(home))
-		if err != nil || !bytes.Equal(before, after) {
-			t.Fatalf("failed startup changed old database file: %v", err)
-		}
-	})
 }
 
 func TestReleaseExecutableFlagsAndExport(t *testing.T) {
@@ -257,25 +198,6 @@ func TestReleaseExecutableFlagsAndExport(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Dir(path)); !os.IsNotExist(err) {
 		t.Fatal("missing database export created data")
-	}
-
-	olderHome := t.TempDir()
-	olderDatabase := fixtureDatabase(t, olderHome)
-	if _, err := olderDatabase.Exec(olderSchema); err != nil {
-		t.Fatal(err)
-	}
-	olderPath := isolatedDatabasePath(olderHome)
-	beforeOlderExport, err := os.ReadFile(olderPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, stderr, err = runCLI(t, binary, olderHome, "--export-csv", "-")
-	if err == nil || !strings.Contains(stderr, "database schema does not match") {
-		t.Fatalf("export accepted older schema: stderr=%q err=%v", stderr, err)
-	}
-	afterOlderExport, err := os.ReadFile(olderPath)
-	if err != nil || !bytes.Equal(beforeOlderExport, afterOlderExport) {
-		t.Fatalf("export changed older database: %v", err)
 	}
 
 	database := fixtureDatabase(t, home)

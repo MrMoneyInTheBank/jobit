@@ -2,7 +2,6 @@ package store
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -49,86 +48,10 @@ func openSQLite(dsn string) (*sql.DB, error) {
 	return database, nil
 }
 
+// InitDB applies the single schema used by this build.
 func InitDB(db *sql.DB) error {
-	if _, err := db.Exec(schemaSQL); err != nil {
-		return err
-	}
-	if err := CheckSchema(db); err != nil {
-		if !errors.Is(err, errSchemaMismatch) {
-			return err
-		}
-		return replaceEmptySchema(db)
-	}
-	return nil
-}
-
-var errSchemaMismatch = errors.New("database schema does not match this Jobit build; back up and remove the old database to start fresh")
-
-// replaceEmptySchema refreshes a pre-release database only when it has no rows.
-func replaceEmptySchema(db *sql.DB) error {
-	transaction, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer transaction.Rollback()
-	var applicationCount int
-	if err := transaction.QueryRow("SELECT COUNT(*) FROM job_applications").Scan(&applicationCount); err != nil {
-		return err
-	}
-	if applicationCount != 0 {
-		return errSchemaMismatch
-	}
-	if _, err := transaction.Exec("DROP TABLE job_applications"); err != nil {
-		return err
-	}
-	if _, err := transaction.Exec(schemaSQL); err != nil {
-		return err
-	}
-	if err := checkSchema(transaction); err != nil {
-		return err
-	}
-	return transaction.Commit()
-}
-
-// CheckSchema verifies that a database uses the current layout without writing to it.
-func CheckSchema(db *sql.DB) error {
-	return checkSchema(db)
-}
-
-type schemaQuerier interface {
-	Query(string, ...any) (*sql.Rows, error)
-}
-
-func checkSchema(db schemaQuerier) error {
-	rows, err := db.Query("PRAGMA table_info(job_applications)")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	expected := []string{"id", "company_name", "position", "application_date", "status", "referral", "remote", "location", "pay_min", "pay_max", "pay_currency", "ranking", "notes", "job_posting_link", "company_website_link"}
-	var actual []string
-	for rows.Next() {
-		var index, notNull, primaryKey int
-		var name, columnType string
-		var defaultValue sql.NullString
-		if err := rows.Scan(&index, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
-			return err
-		}
-		actual = append(actual, name)
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	if len(actual) != len(expected) {
-		return errSchemaMismatch
-	}
-	for index, name := range expected {
-		if actual[index] != name {
-			return errSchemaMismatch
-		}
-	}
-	return nil
+	_, err := db.Exec(schemaSQL)
+	return err
 }
 
 func CloseDB(database *sql.DB) error {
