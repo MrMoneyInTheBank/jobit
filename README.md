@@ -26,6 +26,7 @@ The goal is to replace spreadsheets or Notion with a tool that lives entirely in
 Implemented: local persistence, responsive application list, sorting and filtering,
 full details, validated creation and editing, status updates, and confirmed deletion.
 Release verification is tracked in docs/release-check.md.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute.
 
 ## Installation
 
