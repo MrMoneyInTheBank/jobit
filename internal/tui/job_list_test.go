@@ -101,8 +101,11 @@ func TestListColumnsAndBounds(t *testing.T) {
 	j := InitJobList(jobs)
 	for _, size := range [][2]int{{120, 32}, {80, 24}, {40, 12}, {24, 9}} {
 		j.Update(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
-		if len(j.JobsTable.Columns()) != 4 || len(j.JobsTable.Rows()[0]) != 4 {
+		if len(j.JobsTable.Columns()) != 5 || len(j.JobsTable.Rows()[0]) != 5 {
 			t.Fatal("unexpected columns")
+		}
+		if j.JobsTable.Columns()[3].Title != "Status" || j.JobsTable.Rows()[0][3] != string(model.StatusSubmitted) {
+			t.Fatal("missing application status")
 		}
 		v := j.View()
 		if lipgloss.Width(v) > size[0] || lipgloss.Height(v) > size[1] {

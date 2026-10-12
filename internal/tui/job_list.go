@@ -93,7 +93,7 @@ func constructRow(stored model.StoredJobApplication) table.Row {
 	application := stored.JobApplication
 	return table.Row{
 		plain(application.CompanyName), plain(application.Position),
-		optional(application.Location), ranking(application.Rank),
+		optional(application.Location), plain(string(application.Status)), ranking(application.Rank),
 	}
 }
 
@@ -117,17 +117,18 @@ func InitJobList(jobs []model.StoredJobApplication, save ...SaveApplication) Job
 }
 
 func columns(width int) []table.Column {
-	available := max(4, width-8) // Two padding cells per column.
-	rank := min(7, max(1, available/5))
-	remaining := available - rank
+	available := max(5, width-10) // Two padding cells per column.
+	rank := min(7, max(1, available/6))
+	status := min(12, max(1, available/5))
+	remaining := available - rank - status
 	company := max(1, remaining*30/100)
 	position := max(1, remaining*42/100)
 	location := max(1, remaining-company-position)
-	titles := []string{"Company", "Position", "Location", "Ranking"}
+	titles := []string{"Company", "Position", "Location", "Status", "Ranking"}
 	if width < 48 {
-		titles = []string{"Co.", "Role", "Place", "Rank"}
+		titles = []string{"Co.", "Role", "Place", "Status", "Rank"}
 	}
-	return []table.Column{{Title: titles[0], Width: company}, {Title: titles[1], Width: position}, {Title: titles[2], Width: location}, {Title: titles[3], Width: rank}}
+	return []table.Column{{Title: titles[0], Width: company}, {Title: titles[1], Width: position}, {Title: titles[2], Width: location}, {Title: titles[3], Width: status}, {Title: titles[4], Width: rank}}
 }
 
 func (jobList *JobList) contentWidth() int {
