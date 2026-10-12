@@ -17,7 +17,7 @@ The goal is to replace spreadsheets or Notion with a tool that lives entirely in
 ## Core Ideas
 
 - Local-first: data is stored locally
-- Fixed application fields with optional pay, notes, and links
+- Fixed application fields with optional pay and notes, plus required links
 - Terminal-native: no mouse, no browser, no GUI
 - Opinionated simplicity over feature bloat
 
@@ -240,8 +240,8 @@ when both are supplied. A blank amount stays absent; an explicit 0 is retained.
 Invalid ranking and pay characters are rejected while typing or pasting.
 Complete invalid dates are also rejected; partial dates remain editable.
 Currency is optional and accepts three letters, normalized to uppercase. Pay
-can contain just one amount or currency alone. Notes and links are optional;
-nonempty links must be complete HTTP or HTTPS URLs. Required text, completed
+can contain just one amount or currency alone. Notes are optional. Both links
+are required and must be complete HTTP or HTTPS URLs. Required text, completed
 dates, currency length, and the pay range are validated again before saving.
 
 Tab/Shift+Tab move between fields; Enter moves to the next field except in
