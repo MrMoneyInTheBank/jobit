@@ -142,8 +142,10 @@ func TestMutationErrorsAndFilters(t *testing.T) {
 	j.rebuild(2)
 	key(&j, "u")
 	j.Update(tea.KeyMsg{Type: tea.KeyRight})
-	// Existing fixture has no date; enter a valid date to exercise repository errors.
+	// Complete the fixture to exercise repository errors.
 	j.fields[dateField] = "2026-10-11"
+	j.fields[postingField] = "https://example.com/job"
+	j.fields[websiteField] = "https://example.com"
 	cmd := key(&j, "ctrl+s")
 	if cmd == nil {
 		t.Fatalf("unexpected validation: %s", j.formError)

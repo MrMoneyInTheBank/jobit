@@ -154,6 +154,8 @@ func TestEmptyAndForm(t *testing.T) {
 		t.Fatal("invalid rank saved")
 	}
 	j.fields[3] = "5"
+	j.fields[postingField] = "https://example.com/job"
+	j.fields[websiteField] = "https://example.com"
 	cmd := key(&j, "ctrl+s")
 	if cmd == nil {
 		t.Fatal("missing save command")
@@ -175,6 +177,8 @@ func TestSaveFailureRetainsInput(t *testing.T) {
 	key(&j, "j")
 	key(&j, "a")
 	copy(j.fields[:4], []string{"Acme", "Engineer", "", "3"})
+	j.fields[postingField] = "https://example.com/job"
+	j.fields[websiteField] = "https://example.com"
 	cmd := key(&j, "ctrl+s")
 	j.Update(cmd())
 	if j.screen != addScreen || j.fields[0] != "Acme" || j.formError != "database locked" {

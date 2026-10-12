@@ -10,12 +10,14 @@ import (
 )
 
 var testApp model.JobApplication = model.JobApplication{
-	CompanyName:     "OpenAI",
-	Position:        "Machine Learning Engineer",
-	ApplicationDate: time.Now().UTC(),
-	Status:          model.StatusSubmitted,
-	Referral:        false,
-	Rank:            model.RankThree,
+	CompanyName:        "OpenAI",
+	Position:           "Machine Learning Engineer",
+	ApplicationDate:    time.Now().UTC(),
+	Status:             model.StatusSubmitted,
+	Referral:           false,
+	Rank:               model.RankThree,
+	JobPostingLink:     "https://example.com/job",
+	CompanyWebsiteLink: "https://example.com",
 }
 
 func mustOpenDB(t *testing.T) *sql.DB {

@@ -8,9 +8,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/MrMoneyInTheBank/jobit/internal/model"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/MrMoneyInTheBank/jobit/internal/model"
 )
 
 const (
@@ -49,8 +50,8 @@ var formFields = [fieldCount]formField{
 	{"Maximum pay", "Optional · whole amount, at least minimum", nil},
 	{"Currency", "Optional · 3-letter code, e.g. USD, EUR, INR", nil},
 	{"Notes", "Optional · Enter inserts newline · Tab moves on", nil},
-	{"Job posting link", "Optional · paste the full link", nil},
-	{"Company website", "Optional · paste the full link", nil},
+	{"Job posting link *", "Required · paste the full link", nil},
+	{"Company website *", "Required · paste the full link", nil},
 }
 
 func defaultFields() [fieldCount]string {
@@ -128,7 +129,7 @@ func applicationFromFields(fields [fieldCount]string) (model.JobApplication, int
 	}
 	for _, fieldIndex := range []int{postingField, websiteField} {
 		if values[fieldIndex] == "" {
-			continue
+			return fail(fieldIndex, strings.TrimSuffix(formFields[fieldIndex].name, " *")+" is required")
 		}
 		parsedURL, err := url.ParseRequestURI(values[fieldIndex])
 		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Hostname() == "" {

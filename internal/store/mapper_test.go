@@ -76,6 +76,8 @@ func TestStoreRejectsInvalidApplicationFields(t *testing.T) {
 		{"currency", func(app *model.JobApplication) { app.Pay = &model.Pay{Currency: &badCurrency} }},
 		{"posting link", func(app *model.JobApplication) { app.JobPostingLink = "javascript:alert(1)" }},
 		{"website link", func(app *model.JobApplication) { app.CompanyWebsiteLink = "example.com" }},
+		{"missing posting link", func(app *model.JobApplication) { app.JobPostingLink = " " }},
+		{"missing website link", func(app *model.JobApplication) { app.CompanyWebsiteLink = "" }},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			application := testApp

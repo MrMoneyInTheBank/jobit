@@ -87,15 +87,9 @@ func randomJobApplication(randomGenerator *rand.Rand) model.JobApplication {
 		application.Notes = note
 	}
 
-	if randomGenerator.Float64() < 0.5 {
-		postingLink := "https://jobs.example.com/posting"
-		application.JobPostingLink = postingLink
-	}
-	if randomGenerator.Float64() < 0.5 {
-		companyDomain := strings.ToLower(strings.ReplaceAll(application.CompanyName, " ", ""))
-		websiteLink := "https://www." + companyDomain + ".com"
-		application.CompanyWebsiteLink = websiteLink
-	}
+	application.JobPostingLink = "https://jobs.example.com/posting"
+	companyDomain := strings.ToLower(strings.ReplaceAll(application.CompanyName, " ", ""))
+	application.CompanyWebsiteLink = "https://www." + companyDomain + ".com"
 
 	return application
 }

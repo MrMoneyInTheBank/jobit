@@ -127,6 +127,7 @@ func TestReleaseExecutableStartup(t *testing.T) {
 			t.Fatal(err)
 		}
 		application := model.JobApplication{CompanyName: "Acme", Position: "Engineer", ApplicationDate: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC), Status: model.StatusSubmitted, Rank: model.RankThree}
+		application.JobPostingLink, application.CompanyWebsiteLink = "https://example.com/job", "https://example.com"
 		id, err := store.AddJobApplication(database, application)
 		if err != nil {
 			t.Fatal(err)
@@ -143,7 +144,7 @@ func TestReleaseExecutableStartup(t *testing.T) {
 
 	t.Run("create application through terminal", func(t *testing.T) {
 		home := t.TempDir()
-		output, err := runInTerminal(t, binary, home, "a", "Acme", "\tEngineer\t\t3\x13", "q")
+		output, err := runInTerminal(t, binary, home, "a", "Acme", "\tEngineer\t\t3", "\t\t\t\t\t\t\t\t\thttps://example.com/job\thttps://example.com\x13", "q")
 		if err != nil || !strings.Contains(output, "Acme") {
 			t.Fatalf("form did not save through TUI: %v\n%s", err, output)
 		}
@@ -205,6 +206,7 @@ func TestReleaseExecutableFlagsAndExport(t *testing.T) {
 		t.Fatal(err)
 	}
 	application := model.JobApplication{CompanyName: "Acme, Inc.", Position: "Engineer", ApplicationDate: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC), Status: model.StatusSubmitted, Rank: model.RankThree, Notes: "line one\nline two"}
+	application.JobPostingLink, application.CompanyWebsiteLink = "https://example.com/job", "https://example.com"
 	if _, err := store.AddJobApplication(database, application); err != nil {
 		t.Fatal(err)
 	}

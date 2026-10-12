@@ -53,6 +53,7 @@ func TestCSVExport(t *testing.T) {
 	}
 	zero := 0
 	app := model.JobApplication{CompanyName: "Acme, Inc.", Position: "Engineer", ApplicationDate: time.Now(), Status: model.StatusSubmitted, Rank: model.RankThree, Notes: "line one\n\"quoted\" line two", Pay: &model.Pay{Min: &zero}}
+	app.JobPostingLink, app.CompanyWebsiteLink = "https://example.com/job", "https://example.com"
 	if _, err = store.AddJobApplication(db, app); err != nil {
 		t.Fatal(err)
 	}

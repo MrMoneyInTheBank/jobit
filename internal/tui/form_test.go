@@ -15,6 +15,8 @@ func validFields() [fieldCount]string {
 	fields[companyField] = " Acme "
 	fields[positionField] = " Engineer "
 	fields[rankField] = "3"
+	fields[postingField] = "https://example.com/job"
+	fields[websiteField] = "https://example.com"
 	return fields
 }
 
@@ -32,6 +34,7 @@ func TestFormValidation(t *testing.T) {
 		{"rank fractional", rankField, "2.5"}, {"pay negative", minField, "-1"}, {"pay fractional", maxField, "1.5"},
 		{"pay comma", minField, "1,000"}, {"pay overflow", maxField, strings.Repeat("9", 100)},
 		{"currency length", currencyField, "US"}, {"currency characters", currencyField, "1$!"},
+		{"missing posting link", postingField, " "}, {"missing company website", websiteField, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			fields := validFields()

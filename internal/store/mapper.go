@@ -76,11 +76,11 @@ func validateApplication(app model.JobApplication) error {
 			}
 		}
 	}
-	for _, link := range []string{app.JobPostingLink, app.CompanyWebsiteLink} {
-		if link == "" {
-			continue
+	for _, link := range []struct{ name, value string }{{"job posting link", app.JobPostingLink}, {"company website link", app.CompanyWebsiteLink}} {
+		if strings.TrimSpace(link.value) == "" {
+			return fmt.Errorf("%s is required", link.name)
 		}
-		parsedURL, err := url.ParseRequestURI(link)
+		parsedURL, err := url.ParseRequestURI(link.value)
 		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Hostname() == "" {
 			return fmt.Errorf("links must use a full http:// or https:// URL")
 		}
