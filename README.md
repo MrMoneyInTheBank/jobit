@@ -28,6 +28,13 @@ full details, validated creation and editing, status updates, and confirmed dele
 Release verification is tracked in docs/release-check.md.
 See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute.
 
+## Demo
+
+
+https://github.com/user-attachments/assets/e107b7fb-f871-4d9e-b4e4-664bae46ac16
+
+
+
 ## Installation
 
 macOS is the primary supported platform; Linux is also supported.
